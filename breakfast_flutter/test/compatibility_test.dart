@@ -13,6 +13,39 @@ import 'fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('Order dates use received time, preserve manual timestamps and omit unknown legacy dates', () {
+    final received = DateTime.utc(2026, 10, 4, 8, 15);
+    final order = <String, dynamic>{
+      'emailSource': {'receivedAt': received.toIso8601String()},
+      'createdAt': '2026-10-05T08:00:00Z',
+    };
+    expect(orderDate(order), received.toLocal());
+    expect(
+      orderDate({'createdAt': received.toIso8601String()}),
+      received.toLocal(),
+    );
+    expect(
+      orderDate({
+        'receivedAt': 'invalid',
+        'createdAt': received.toIso8601String(),
+      }),
+      received.toLocal(),
+    );
+    expect(orderDateLabel({}), isEmpty);
+    final data = fixture();
+    data['orders'].add({
+      'id': 'dated',
+      'room': '8',
+      'slot': slots.first,
+      'comment': '',
+      'lines': <Json>[],
+      'createdAt': received.toIso8601String(),
+    });
+    expect(
+      validateData(clone(data))['orders'][0]['createdAt'],
+      received.toIso8601String(),
+    );
+  });
   test('First-run migration copies data and queue once without changing the original profile', () {
     final root = Directory.systemTemp.createTempSync('breakfast-migration-');
     addTearDown(() => root.deleteSync(recursive: true));

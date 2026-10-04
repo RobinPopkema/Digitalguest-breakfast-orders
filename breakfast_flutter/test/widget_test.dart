@@ -152,7 +152,7 @@ void main() {
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       expect(find.text('Categories'), findsNothing);
-      expect(find.text('Menu'), findsOneWidget);
+      expect(find.byKey(const ValueKey('settings-section-0')), findsOneWidget);
       await tester.tap(find.text('Cabins'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('cabin-pill-8')), findsOneWidget);
@@ -318,7 +318,7 @@ void main() {
     await open(tester);
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Menu'));
+    await tester.tap(find.byKey(const ValueKey('settings-section-0')));
     await tester.pumpAndSettle();
     expect(
       tester
@@ -538,6 +538,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(app.data['orders'].length, 1);
       expect(app.data['orders'][0]['room'], 'Igloo 1');
+      expect(DateTime.tryParse(app.data['orders'][0]['createdAt']), isNotNull);
+      expect(find.text(orderDateLabel(app.data['orders'][0])), findsOneWidget);
       expect(app.data['orders'][0]['lines'][0]['qty'], 1);
       expect(app.data['safeCabins'].length, 2);
       expect(find.text('Igloo 1'), findsOneWidget);
@@ -584,7 +586,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byTooltip('Category color: Peach'), findsWidgets);
       expect(find.byTooltip('Peach'), findsNothing);
-      await tester.tap(find.text('Menu'));
+      await tester.tap(find.byKey(const ValueKey('settings-section-0')));
       await tester.pumpAndSettle();
       expect(
         tester.getSize(find.byKey(const ValueKey('add-items'))).width,
@@ -751,7 +753,7 @@ void main() {
             .text,
         'Changed',
       );
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       expect(app.data['categories'][0]['name'], 'Bakery');
       expect(tester.takeException(), isNull);
@@ -792,7 +794,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Menu'));
+      await tester.tap(find.byKey(const ValueKey('settings-section-0')));
       await tester.pumpAndSettle();
       final input = find.byKey(const ValueKey('add-items'));
       for (final name in ['Toast', 'Jam']) {

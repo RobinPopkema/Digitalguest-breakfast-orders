@@ -116,6 +116,8 @@ class _OrderEditorState extends State<OrderEditor> {
         final result = {
           ...?old,
           'id': old?['id'] ?? newId(),
+          if (old == null)
+            'createdAt': DateTime.now().toUtc().toIso8601String(),
           'room': room.text.trim(),
           'slot': slot,
           'comment': comment.text.trim(),

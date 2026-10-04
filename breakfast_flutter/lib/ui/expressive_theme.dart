@@ -73,7 +73,7 @@ ThemeData breakfastTheme({
   final shape = WidgetStateProperty.resolveWith<OutlinedBorder>(
     (states) => RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(
-        states.contains(WidgetState.pressed) ? 12 : 28,
+        states.contains(WidgetState.pressed) ? 6 : 8,
       ),
     ),
   );
@@ -97,7 +97,7 @@ ThemeData breakfastTheme({
   );
   OutlineInputBorder fieldBorder(Color color, [double width = 1]) =>
       OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: color, width: width),
       );
   return base.copyWith(
@@ -150,11 +150,11 @@ ThemeData breakfastTheme({
       elevation: 0,
       color: colors.surfaceContainerLowest,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: colors.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     inputDecorationTheme: InputDecorationThemeData(
       isDense: true,
@@ -185,7 +185,7 @@ ThemeData breakfastTheme({
     tabBarTheme: TabBarThemeData(
       indicator: BoxDecoration(
         color: colors.secondaryContainer,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(10),
       ),
       indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: Colors.transparent,
@@ -198,11 +198,11 @@ ThemeData breakfastTheme({
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: colors.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     dividerTheme: DividerThemeData(
       color: colors.outlineVariant.withValues(alpha: .6),

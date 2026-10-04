@@ -1,6 +1,7 @@
 .tools/
 release/
 .update-helper-test-*/
+.helper-launch-probe/
 *.log
 **/build/
 **/.dart_tool/

@@ -4,6 +4,27 @@ import 'dart:math';
 import 'package:unorm_dart/unorm_dart.dart' as unicode;
 
 typedef Json = Map<String, dynamic>;
+// Older manual orders have no timestamp; retain that rather than inventing one.
+DateTime? orderDate(Json order) {
+  final source = order['emailSource'];
+  for (final raw in [
+    order['receivedAt'],
+    if (source is Map) source['receivedAt'],
+    order['createdAt'],
+  ]) {
+    final value = DateTime.tryParse('$raw');
+    if (value != null) return value.toLocal();
+  }
+  return null;
+}
+
+String orderDateLabel(Json order) {
+  final date = orderDate(order);
+  if (date == null) return '';
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(date.day)}-${two(date.month)}-${date.year} ${two(date.hour)}:${two(date.minute)}';
+}
+
 Json clone(Json value) => jsonDecode(jsonEncode(value)) as Json;
 List<Json> rows(dynamic value) => (value as List).cast<Json>();
 String normalize(dynamic value) => unicode

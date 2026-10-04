@@ -7,8 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../model.dart';
+import 'update_helper.dart';
 
-const appVersion = '2.0.27';
+const appVersion = '2.0.28';
 const updateRepository = String.fromEnvironment(
   'UPDATE_REPOSITORY',
   defaultValue: 'RobinPopkema/Digitalguest-breakfast-orders',
@@ -212,27 +213,20 @@ class Updates extends ChangeNotifier {
         }),
         flush: true,
       );
-      await Process.start(
-        '${Platform.environment['SystemRoot']}/System32/WindowsPowerShell/v1.0/powershell.exe',
-        [
-          '-NoProfile',
-          '-NonInteractive',
-          '-WindowStyle',
-          'Hidden',
-          '-ExecutionPolicy',
-          'Bypass',
-          '-File',
-          helper.path,
-          '-Config',
-          config.path,
-        ],
-        mode: ProcessStartMode.detached,
+      final helperProcess = await launchUpdateHelper(helper, config, work);
+      int? helperExit;
+      unawaited(
+        helperProcess.exitCode.then<void>((value) {
+          helperExit = value;
+        }),
       );
       final ready = File('${work.path}/ready');
       for (var attempt = 0; attempt < 180 && !await ready.exists(); attempt++) {
-        if (await File('${work.path}/error.txt').exists()) {
+        if (helperExit != null ||
+            await File('${work.path}/error.txt').exists()) {
           throw StateError(
-            'The update helper could not prepare the update. Your app is still running.',
+            'Could not prepare the update. Your app is still running. '
+            'Details: ${work.path}',
           );
         }
         await Future<void>.delayed(const Duration(milliseconds: 500));

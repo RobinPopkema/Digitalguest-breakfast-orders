@@ -36,7 +36,11 @@ function paginateOrderSlips() {
     if (slip.scrollHeight > slip.clientHeight + 1) throw new Error('An order heading is too large to fit on a slip. Shorten the room number.');
     return slip;
   }
-  function overflows(slip) { return slip.scrollHeight > slip.clientHeight + 1; }
+  function overflows(slip) {
+    const style = getComputedStyle(slip);
+    const bottom = slip.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) - parseFloat(style.borderBottomWidth);
+    return slip.scrollHeight > slip.clientHeight + 1 || [...slip.children].some(child => child.getBoundingClientRect().bottom > bottom + 1);
+  }
   function splitNode(node, count) {
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
     let text, remaining = count;
@@ -57,7 +61,9 @@ function paginateOrderSlips() {
     return [prefix, suffix];
   }
   for (const original of originals) {
-    let slip = column(original, false), bodyCount = 0;
+    const slips = [];
+    const nextSlip = continued => { const slip = column(original, continued); slips.push(slip); return slip; };
+    let slip = nextSlip(false), bodyCount = 0;
     const body = [...original.children].filter(child => child.tagName !== 'H3' && !child.classList.contains('time'));
     for (const source of body) {
       let node = source.cloneNode(true);
@@ -65,7 +71,7 @@ function paginateOrderSlips() {
         slip.append(node);
         if (!overflows(slip)) { bodyCount++; break; }
         node.remove();
-        if (bodyCount) { slip = column(original, true); bodyCount = 0; continue; }
+        if (bodyCount) { slip = nextSlip(true); bodyCount = 0; continue; }
         // A single very long item or comment also needs splitting; retain its markup.
         let low = 1, high = node.textContent.length - 1, fit = 0;
         while (low <= high) {
@@ -85,9 +91,12 @@ function paginateOrderSlips() {
         const [prefix, suffix] = splitNode(node, fit);
         slip.append(prefix);
         node = suffix;
-        slip = column(original, true);
+        slip = nextSlip(true);
         bodyCount = 0;
       }
+    }
+    if (slips.length > 1 && !original.classList.contains('schedulecard')) {
+      slips.forEach((part, i) => {const footer = document.createElement('footer'); footer.className = 'slip-warning'; footer.textContent = `Order has ${slips.length} slips — collect all · ${i + 1}/${slips.length}`; part.append(footer);});
     }
   }
   anchor.remove();
@@ -110,9 +119,9 @@ function paginateTotals() {
     if (!groups.length || groups.at(-1).id !== id) groups.push({id, rows: []});
     groups.at(-1).rows.push(row);
   }
-  let grid, columns = 3, column, table;
+  let grid, columns = 2, column, table;
   function nextColumn() {
-    if (columns === 3) {
+    if (columns === 2) {
       const page = document.createElement('section');
       page.className = 'printpage summarypage';
       grid = document.createElement('div');
@@ -182,7 +191,7 @@ function paginateTotals() {
       if (overflows()) throw new Error('An item total is too tall to fit on a page. Shorten its name.');
     }
   }
-  while (columns < 3) nextColumn();
+  while (columns < 2) nextColumn();
   anchor.remove();
 }
 

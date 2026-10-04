@@ -27,8 +27,11 @@ class GuestContact extends StatelessWidget {
   final List<Widget> trailing;
   @override
   Widget build(BuildContext context) {
-    final guest = guestDetails(entry);
+    final guest = {...guestDetails(entry)};
+    final date = orderDateLabel(entry);
+    if (date.isNotEmpty) guest['date'] = date;
     const icons = {
+      'date': Icons.event_outlined,
       'name': Icons.person_outline,
       'email': Icons.alternate_email,
       'phone': Icons.phone_outlined,
@@ -174,12 +177,14 @@ class EditorDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
-    required this.actions,
+    this.actions = const [],
+    this.headerActions = const [],
     this.width = 780,
   });
   final String title;
   final Widget body;
   final List<Widget> actions;
+  final List<Widget> headerActions;
   final double width;
   @override
   Widget build(BuildContext context) => Dialog(
@@ -196,7 +201,7 @@ class EditorDialog extends StatelessWidget {
           children: [
             Container(
               color: Theme.of(context).colorScheme.primaryContainer,
-              padding: const EdgeInsets.fromLTRB(24, 14, 12, 14),
+              padding: const EdgeInsets.fromLTRB(20, 6, 8, 6),
               child: Row(
                 children: [
                   Expanded(
@@ -205,6 +210,8 @@ class EditorDialog extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
+                  ...headerActions,
+                  const SizedBox(width: 8),
                   IconButton.filledTonal(
                     tooltip: 'Close',
                     onPressed: () => Navigator.pop(context),
@@ -215,16 +222,17 @@ class EditorDialog extends StatelessWidget {
             ),
             const Divider(height: 1),
             Flexible(child: body),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.end,
-                children: actions,
+            if (actions.isNotEmpty) const Divider(height: 1),
+            if (actions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: actions,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -253,7 +261,7 @@ class QuantityStepper extends StatelessWidget {
           : const Duration(milliseconds: 180),
       decoration: BoxDecoration(
         color: value > 0 ? colors.secondaryContainer : colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

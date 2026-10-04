@@ -21,7 +21,11 @@ class Printing {
               ...data,
               'orders': [
                 for (final order in rows(data['orders']))
-                  {...order, 'guest': guestDetails(order)},
+                  {
+                    ...order,
+                    'guest': guestDetails(order),
+                    'orderDate': orderDateLabel(order),
+                  },
               ],
               'printMode': mode,
               'printSelection': selected.toList(),
@@ -30,11 +34,11 @@ class Printing {
             .replaceAll('>', r'\u003e')
             .replaceAll('&', r'\u0026');
     return '''<!doctype html><html><head><meta charset="utf-8"><title>Breakfast Orders — Print</title><style>$css
-@media screen {html,body{background:#edf3f6;margin:0;min-height:100%;font-family:'Segoe UI',system-ui;color:#142f43}.browserbar{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;background:#d4eaf0;border-bottom:1px solid #cedce4}.browserbar h1{font-size:24px;margin:0}.browserbar p{font-size:14px;margin:0;max-width:650px}.browserbar button{cursor:pointer;min-height:44px;padding:10px 20px;border:0;border-radius:28px;background:#0b647b;color:white;font:600 14px 'Segoe UI',system-ui}.browserbar button:disabled{opacity:.5;cursor:wait}.browserbar button:focus-visible{outline:3px solid #0b647b;outline-offset:3px}#printArea{position:static;visibility:visible;width:max-content;min-width:100%}.printpage{background:white;margin:20px auto!important;box-shadow:0 3px 18px #142f4320}}
-
+@media screen {html,body{margin:0;background:#edf3f6;font-family:'Segoe UI',sans-serif}.browserbar{min-height:100vh;display:grid;place-items:center}.browserbar button{padding:14px 24px;border:0;border-radius:8px;background:#0b647b;color:white;font:600 16px 'Segoe UI',sans-serif;cursor:pointer}.browserbar button:disabled{opacity:.5}#printArea{position:absolute;left:-100000px;top:0;visibility:hidden}}
 @media print {#printArea{position:static!important;left:auto;top:auto;width:auto;visibility:visible!important;pointer-events:auto}.browserbar{display:none!important}.printpage{margin:0}body{background:white}}
-</style></head><body><div class="browserbar"><h1>Breakfast orders</h1><p id="printMessage">Preparing your print pages…</p><button onclick="window.print()" id="browserPrint" disabled>Preparing…</button></div><div id="printArea" class="print"></div><script type="application/json" id="order-data">$payload</script><script>$renderer\n$layout
-window.addEventListener('load',async()=>{try{await document.fonts.ready;paginateOrderSlips();paginateTotals();paginateTimetable();document.getElementById('browserPrint').disabled=false;document.getElementById('browserPrint').textContent='Print / Save PDF';document.getElementById('printMessage').textContent='Click Print / Save PDF or press Ctrl+P. Choose Save as PDF for a PDF file. Use A4 landscape, 100% scale, and disable headers and footers.';requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}catch(error){document.getElementById('printMessage').textContent='Could not prepare print pages: '+error.message}},{once:true});</script></body></html>''';
+</style></head><body><div class="browserbar"><button onclick="window.print()" id="browserPrint" disabled>Preparing…</button></div><div id="printArea" class="print"></div><script type="application/json" id="order-data">$payload</script><script>$renderer\n$layout
+window.addEventListener('afterprint',()=>window.close());
+window.addEventListener('load',async()=>{try{await document.fonts.ready;paginateOrderSlips();paginateTotals();paginateTimetable();document.getElementById('browserPrint').disabled=false;document.getElementById('browserPrint').textContent='Print / Save PDF';requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}catch(error){document.getElementById('browserPrint').textContent='Could not prepare print pages: '+error.message}},{once:true});</script></body></html>''';
   }
 
   static Future<File> prepare(

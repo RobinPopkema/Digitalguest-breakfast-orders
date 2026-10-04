@@ -1,4 +1,4 @@
-Breakfast Orders 2.0.27 Expressive preview - Flutter / Material 3 Expressive
+Breakfast Orders 2.0.28 Expressive preview - Flutter / Material 3 Expressive
 Windows 10/11, 64-bit
 
 Extract the whole ZIP, then open breakfast_orders.exe. Keep the data folder and
@@ -7,6 +7,20 @@ is required to run this package. Edge, Chrome or Firefox is needed for printing.
 
 UPDATING FROM AN EARLIER FLUTTER PREVIEW
 Your existing Flutter profile, settings and saved password are reused.
+Versions 2.0.26 and 2.0.27 need one manual replacement to fix their update launcher.
+Close the app, then extract the complete new application folder. Do not delete
+your separate %APPDATA%\Breakfast Orders Flutter profile.
+
+NEW IN 2.0.28
+Reliable update helper launch, with Update available first in the toolbar.
+Portrait Items overview and Timetable, blank zero-quantity cells, alternating
+category shading, and warnings at the bottom of orders that span multiple slips.
+The print webpage only shows a Print / Save PDF fallback button and attempts to
+close after printing. Some browser settings may prevent automatic closing.
+Sharper corners, smaller dialog headers, Settings titles and Save beside Close.
+About and dark mode are at the bottom of the Settings sidebar.
+Received/creation date and time appear on orders and delivery slips. Historical
+manual orders without a saved timestamp are left without one.
 
 FIRST RUN FROM ELECTRON AND EXISTING DATA
 Close the old Breakfast Orders app before your first launch.
@@ -173,7 +187,6 @@ apps during the same service.
 Source, build instructions and validation details are in the companion source.
 Third-party license notices are in licenses/, THIRD-PARTY-NOTICES.txt and
 Settings > About & licenses.
-
 
 
 

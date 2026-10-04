@@ -440,7 +440,7 @@ class _ManageDialogState extends State<ManageDialog> {
               margin: EdgeInsets.only(bottom: candidates.isEmpty ? 0 : 8),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: candidates.isEmpty
                   ? null
@@ -460,7 +460,7 @@ class _ManageDialogState extends State<ManageDialog> {
     },
     feedback: Material(
       elevation: 8,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
@@ -630,7 +630,7 @@ class _ManageDialogState extends State<ManageDialog> {
               padding: const EdgeInsets.only(left: 14),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -699,8 +699,6 @@ class _ManageDialogState extends State<ManageDialog> {
   Widget backupPage() => ListView(
     padding: const EdgeInsets.all(24),
     children: [
-      Text('Backup & restore', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: 16),
       const Text(
         'Back up saved menu items, orders, accommodations and preferences. Email credentials and pending imports are not included. Save any menu edits before creating a backup.',
       ),
@@ -803,13 +801,8 @@ class _ManageDialogState extends State<ManageDialog> {
     return EditorDialog(
       title: 'Settings',
       width: settingsContentWidth,
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(section < 2 ? 'Cancel' : 'Close'),
-        ),
-        if (section < 2)
-          FilledButton(onPressed: save, child: const Text('Save all changes')),
+      headerActions: [
+        FilledButton(onPressed: save, child: const Text('Save all changes')),
       ],
       body: SizedBox(
         height: 560,
@@ -820,10 +813,10 @@ class _ManageDialogState extends State<ManageDialog> {
               width: 180,
               child: Material(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
-                child: ListView(
-                  padding: const EdgeInsets.all(8),
+                child: Column(
                   children: [
-                    for (var i = 0; i < labels.length; i++)
+                    for (var i = 0; i < labels.length; i++) ...[
+                      if (i == 4) const Spacer(),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: ListTile(
@@ -843,11 +836,12 @@ class _ManageDialogState extends State<ManageDialog> {
                               .colorScheme
                               .secondaryContainer,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           onTap: () => setState(() => section = i),
                         ),
                       ),
+                    ],
                     const Divider(),
                     SwitchListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -871,27 +865,43 @@ class _ManageDialogState extends State<ManageDialog> {
             ),
             const VerticalDivider(width: 1),
             Expanded(
-              child: IndexedStack(
-                index: section,
-                sizing: StackFit.expand,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final key in ['items', 'safeCabins'])
-                    Column(
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Text(
+                      labels[section],
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  Expanded(
+                    child: IndexedStack(
+                      index: section,
+                      sizing: StackFit.expand,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'Edit entries, then save them together. Existing orders retain removed items and accommodation names.',
+                        for (final key in ['items', 'safeCabins'])
+                          Column(
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Text(
+                                  'Edit entries, then save them together. Existing orders retain removed items and accommodation names.',
+                                ),
+                              ),
+                              Expanded(
+                                child: key == 'items'
+                                    ? groupedItems()
+                                    : cabinsPage(),
+                              ),
+                            ],
                           ),
-                        ),
-                        Expanded(
-                          child: key == 'items' ? groupedItems() : cabinsPage(),
-                        ),
+                        EmailSettings(widget.app, embedded: true),
+                        backupPage(),
+                        aboutPage(),
                       ],
                     ),
-                  EmailSettings(widget.app, embedded: true),
-                  backupPage(),
-                  aboutPage(),
+                  ),
                 ],
               ),
             ),

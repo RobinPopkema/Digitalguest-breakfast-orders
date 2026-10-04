@@ -45,6 +45,7 @@ void main() {
         5,
         (i) => {
           'id': 'o$i',
+          'createdAt': '2026-10-04T08:15:00Z',
           'room': ['2', '8', '12', 'Cabin A', 'Cabin B'][i],
           'slot': slots[i % 3],
           if (i == 1)
@@ -208,7 +209,7 @@ void main() {
           await capture('check-interval');
         }
       }
-      await tester.tap(find.text('Menu'));
+      await tester.tap(find.byKey(const ValueKey('settings-section-0')));
       await tester.pumpAndSettle();
       await capture('compact-menu-items');
       expect(tester.takeException(), isNull);

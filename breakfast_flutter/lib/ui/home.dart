@@ -198,7 +198,7 @@ class _HomePageState extends State<HomePage> {
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -313,10 +313,6 @@ class _HomePageState extends State<HomePage> {
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
-                          Text(
-                            'Plan the morning, one cabin at a time.',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
                         ],
                       ),
                     ],
@@ -325,8 +321,6 @@ class _HomePageState extends State<HomePage> {
                     spacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      updateControl(),
-                      printControl(),
                       if (app.updates.available != null)
                         FilledButton.icon(
                           onPressed: app.updates.installing
@@ -335,10 +329,14 @@ class _HomePageState extends State<HomePage> {
                           icon: const Icon(Icons.system_update_alt),
                           label: Text(
                             app.updates.installing
-                                ? 'Downloading ${(app.updates.progress * 100).round()}%'
+                                ? app.updates.progress >= 1
+                                      ? 'Preparing update…'
+                                      : 'Downloading ${(app.updates.progress * 100).round()}%'
                                 : 'Update available',
                           ),
                         ),
+                      updateControl(),
+                      printControl(),
                       settingsControl(),
                       OutlinedButton.icon(
                         onPressed: orders.isEmpty ? null : deleteOrders,
@@ -485,10 +483,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       for (final order in orders) orderRow(order),
                       const SizedBox(height: 20),
-                      Text(
-                        'Saved automatically on this computer',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
                     ],
                   ),
                 ),
@@ -516,7 +510,7 @@ class _HomePageState extends State<HomePage> {
         color: selected.contains(order['id'])
             ? colors.primaryContainer.withValues(alpha: .45)
             : colors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: selected.contains(order['id'])
               ? colors.primary
@@ -729,7 +723,7 @@ class _HomePageState extends State<HomePage> {
                               color: colors.errorContainer.withValues(
                                 alpha: .4,
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: SelectableText(
                               comment,
@@ -785,7 +779,7 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: colors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.outlineVariant),
       ),
       child: Column(
@@ -914,7 +908,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: colors.errorContainer,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   fault,
@@ -1117,7 +1111,7 @@ class _HomePageState extends State<HomePage> {
                               color: colors.errorContainer.withValues(
                                 alpha: .4,
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: SelectableText(
                               comment,

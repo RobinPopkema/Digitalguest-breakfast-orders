@@ -411,7 +411,7 @@ class _EmailReviewState extends State<EmailReview> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: colors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: colors.outlineVariant),
                 ),
                 child: Column(
