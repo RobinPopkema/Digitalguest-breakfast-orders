@@ -1,0 +1,184 @@
+Breakfast Orders 2.0.26 Expressive preview - Flutter / Material 3 Expressive
+Windows 10/11, 64-bit
+
+Extract the whole ZIP, then open breakfast_orders.exe. Keep the data folder and
+DLLs beside the executable. No Flutter, Node, Electron or Visual Studio install
+is required to run this package. Edge, Chrome or Firefox is needed for printing.
+
+UPDATING FROM AN EARLIER FLUTTER PREVIEW
+Your existing Flutter profile, settings and saved password are reused.
+
+FIRST RUN FROM ELECTRON AND EXISTING DATA
+Close the old Breakfast Orders app before your first launch.
+On first launch this version copies orders, menu, safe cabins, pending email
+imports, aliases and duplicate history from %APPDATA%\Breakfast Orders into
+%APPDATA%\Breakfast Orders Flutter. The original profile is never modified.
+The copy happens once. Later changes in the two apps are not synchronized.
+
+Re-enter your mail password in Email settings, connect and list folders, choose
+the exact folder, then Test connection & save / Save & check. Automatic checks
+are paused during migration. Passwords are protected by your Windows account.
+
+If data is on another computer, use Settings > Backup & restore > Restore data with a 1.22.2 JSON
+backup. Back up data exports menu, accepted orders, safe cabins and preferences;
+it excludes mail credentials and the pending email queue. For complete recovery,
+close the app and copy the entire Flutter profile folder. Keep its .bak files
+and backups folder. Windows account changes may require password re-entry.
+
+NEW IN 2.0.21
+Compact category headers and selectors. Eye = enabled; crossed-out eye = disabled.
+Click the square eye button, then Save all changes.
+
+NEW IN 2.0.20
+Menu rows: drag handle, category, item name, availability checkbox, delete.
+Uncheck an item to disable it; check it to enable it. Save all changes applies it.
+
+NEW IN 2.0.19
+Settings > Menu: switch an item off and Save all changes to pause availability.
+Switch it on again to restore it. Existing orders and printouts keep their items.
+Incoming emails with unavailable items require an available replacement in review.
+This does not update the guest-facing ordering website.
+
+NEW IN 2.0.18
+
+Get orders restarts the automatic-check countdown without enabling paused checks.
+Settings combines categories and items under Menu. Category handles move whole
+groups, including their children, between other groups. Item handles still move
+individual items within or between groups.
+Accommodations whitelist is now Cabins: searchable compact pills with edit and
+delete controls. Changes remain staged until Save all changes.
+
+NEW IN 2.0.17
+
+Expanded accepted orders follow the configured category and menu item order,
+instead of the original imported line order. Historical removed items remain
+visible and saved lines and quantities are unchanged.
+
+NEW IN 2.0.16
+
+Full review shows only items that could not be matched automatically, with bold
+source names, category pills in the selectors and read-only original quantities.
+Automatically matched items remain part of the accepted order.
+Menu items are grouped by category. Drag the handles to reorder categories and
+items, or move items between categories; Save all changes commits the new order.
+
+NEW IN 2.0.15
+
+New orders select their cabin from the accommodations whitelist. Guest name,
+email and phone can be entered on new orders and edited on existing orders.
+Guest details remain optional and appear on order cards and print slips.
+Existing orders retain support for historical accommodation names.
+
+NEW IN 2.0.14
+
+Email settings uses an interval slider (1 minute to 24 hours). Short intervals
+have one-minute steps, longer intervals use 15-minute steps; existing custom
+values remain selectable. Use the existing save buttons to apply the interval.
+The browser print page displays pages with a Print / Save PDF button. Slips now
+include guest name, email and phone; colors and typography match the app.
+A4 landscape, the six print modes and measured overflow handling are retained.
+
+NEW IN 2.0.13
+
+Category pills and matching swatches have richer fills and darker text. Category
+select labels stay inside the field instead of protruding above the border.
+Stored color IDs and print colors are unchanged.
+
+NEW IN 2.0.12
+
+New categories default to unused colors, then rotate through the least-used
+colors when the palette is full. Color swatches match pill backgrounds.
+
+NEW IN 2.0.11
+
+Pending-order warning pills follow the customer information on the same line,
+wrapping naturally in smaller windows.
+
+NEW IN 2.0.10
+Consistent blue accents and 44-pixel action buttons throughout the app.
+Get orders no longer shows the last-update time. Its countdown ring remains.
+Use the Dark mode switch in Settings; the choice saves immediately and survives
+restarts. It is a local appearance preference, separate from order-data backups.
+
+NEW IN 2.0.9
+Pending orders replaces Incoming orders. Its cards now use the same layout as
+accepted orders while keeping cabin selection, warning pills and review controls.
+
+NEW IN 2.0.8
+Orders are centered with a maximum width matching the Settings modal.
+They still shrink to fit smaller windows.
+
+NEW IN 2.0.7
+The header logo now matches the desktop icon, with coordinated blue/navy and
+warm yellow colors. Category colors use a circular swatch and color-grid flyout.
+Menu-item categories are color-coded. Order cards have contact icons, clearer
+item rows and a red Comment pill beside Edit. The update countdown is now a
+small, muted ring inside Get orders. Existing category colors and prints remain.
+
+NEW IN 2.0.6
+Settings opens one modal with a vertical menu on the left:
+Categories, Menu items, Accommodations whitelist, Email, Backup & restore,
+and About & licenses. Switching sections keeps your drafts. Menu changes use
+Save all changes; Email has its own save controls. Closing discards unsaved
+menu changes and clears the entered password.
+
+NEW IN 2.0.5
+Settings now contains Manage menu, Backup and restore, Email settings, and
+About and licenses. Clear all orders is red and asks for confirmation.
+Print is now at the top: click its main button for all printouts, or its arrow
+for Orders only / Print (x) orders, Delivery schedule, Items overview or Timetable.
+
+NEW IN 2.0.4
+Get orders is a full button beside Manage menu. The time beneath the label is
+its last successful update. The pie to the right counts down to the next
+scheduled automatic update; hover for the remaining time. A pause icon means
+automatic updates are paused. Manual checks do not reset the automatic schedule.
+
+NEW IN 2.0.3
+Use the refresh icon beside Manage menu to check for new incoming orders.
+The time beside it is the last successful update since opening the app.
+A dash means no successful update yet. Errors do not advance the time.
+Email settings are available under More. Automatic checks keep their settings.
+
+NEW IN 2.0.2
+Manage menu: type in the blank row and press Enter to add entries repeatedly.
+The field stays active. Save all changes commits your batch.
+Incoming orders are compact with fault pills and right-aligned actions.
+Direct cabin matches are selected automatically, ignoring capitalization.
+Guest name, email and phone appear in review and accepted orders when available.
+Show email opens the formatted HTML in your browser with active content and
+remote images blocked. Older imports without saved HTML show their saved text.
+The cabin chooser is now called Select cabin.
+
+PRINTING
+Choose Print > All printouts, Orders only, Selected orders, Delivery schedule,
+Item totals or Expanded timetable. The existing browser print layout is retained.
+Use A4 landscape, 100% scale and turn off headers and footers. If the dialog
+does not open automatically, click Print on the browser page or press Ctrl+P.
+
+PREVIEW VALIDATION
+Automated tests cover data compatibility, email parser/service behavior, the
+real IMAP client against a simulated server, UI workflows, and compact layouts.
+All print modes and a long-order fixture were compared with 1.22.2 in Chrome.
+Windows credential encryption was tested in the compiled application.
+Your actual mail server/login and physical printer still need a local check.
+
+ROLLBACK
+The old app and its profile remain intact. New orders entered in Flutter are
+not automatically copied back. Export a Flutter data backup and restore it in
+1.22.2 if you need to transfer accepted orders back. Its saved mail password and
+pending review history remain separate; do not run automatic importing in both
+apps during the same service.
+
+Source, build instructions and validation details are in the companion source.
+Third-party license notices are in licenses/, THIRD-PARTY-NOTICES.txt and
+Settings > About & licenses.
+
+
+
+
+
+
+
+
+

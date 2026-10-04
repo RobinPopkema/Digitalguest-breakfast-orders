@@ -1,0 +1,14 @@
+This app includes Flutter, Dart and third-party Dart packages. Their collected
+license notices are included by Flutter in data/flutter_assets/NOTICES.Z and
+can be viewed through More > About & licenses.
+
+enough_mail 2.1.7 is used unmodified under the Mozilla Public License 2.0.
+Its license and corresponding library source are included in licenses/.
+Upstream: https://github.com/Enough-Software/enough_mail
+Version: https://pub.dev/packages/enough_mail/versions/2.1.7
+
+Microsoft Visual C++ runtime DLLs are included alongside the application.
+Microsoft redistribution and third-party notices are included in licenses/.
+
+The application icon and the preserved print CSS, renderer and pagination
+originate from the user-supplied Breakfast Orders 1.22.2 source archive.

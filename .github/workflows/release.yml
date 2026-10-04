@@ -1,0 +1,52 @@
+name: Windows release
+on:
+  push:
+    branches: [main]
+    paths: ['breakfast_flutter/**', '.github/workflows/release.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PUB_CACHE: ${{ github.workspace }}/.tools/pub-cache
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Flutter
+        run: |
+          git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git "$env:RUNNER_TEMP/flutter"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          "$env:RUNNER_TEMP/flutter/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Test and build
+        working-directory: breakfast_flutter
+        run: |
+          flutter pub get
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          flutter analyze --no-pub
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          flutter test --no-pub
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          flutter build windows --release --no-pub
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Verify updater and package
+        run: |
+          & ./breakfast_flutter/tool/test-update-helper.ps1
+          $version=((Select-String '^version: ' breakfast_flutter/pubspec.yaml).Line -replace '^version: ','').Split('+')[0]
+          & ./breakfast_flutter/tool/package.ps1 -Version $version
+          "RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Publish version once
+        run: |
+          $tag="v$env:RELEASE_VERSION"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Output 'Version already published; bump pubspec.yaml and appVersion for a new release.'; exit 0 }
+          $asset="release/Breakfast-Orders-Flutter-$env:RELEASE_VERSION-Windows.zip"
+          gh release create $tag $asset --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Breakfast Orders $env:RELEASE_VERSION" --notes-file breakfast_flutter/docs/RELEASE-NOTES.md --latest
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

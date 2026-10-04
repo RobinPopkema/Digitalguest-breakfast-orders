@@ -1,0 +1,11 @@
+.tools/
+release/
+.update-helper-test-*/
+*.log
+**/build/
+**/.dart_tool/
+**/ephemeral/
+**/.flutter-plugins*
+.codex*/
+publish-manifest.json
+test-results.txt
