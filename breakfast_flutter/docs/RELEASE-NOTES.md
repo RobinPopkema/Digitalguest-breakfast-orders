@@ -9,3 +9,5 @@ Breakfast Orders for Windows, rebuilt with Flutter and Material 3 Expressive.
 Download the Windows ZIP, extract the complete folder, and run breakfast_orders.exe.
 Existing Flutter profiles are reused. Releases before 2.0.26 require this one manual
 upgrade before in-app updates become available. This preview is unsigned.
+
+The installation progress dialog prevents new unsaved edits while the app prepares to restart.

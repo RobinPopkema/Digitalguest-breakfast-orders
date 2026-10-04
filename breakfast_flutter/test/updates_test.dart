@@ -6,13 +6,13 @@ void main() {
   Json release() => {
     'draft': false,
     'prerelease': false,
-    'tag_name': 'v2.0.27',
+    'tag_name': 'v2.0.28',
     'body': 'Fixes',
     'assets': [
       {
-        'name': 'Breakfast-Orders-Flutter-2.0.27-Windows.zip',
+        'name': 'Breakfast-Orders-Flutter-2.0.28-Windows.zip',
         'size': 123,
-        'browser_download_url': 'https://github.com/RobinPopkema/Digitalguest-breakfast-orders/releases/download/v2.0.27/Breakfast-Orders-Flutter-2.0.27-Windows.zip',
+        'browser_download_url': 'https://github.com/RobinPopkema/Digitalguest-breakfast-orders/releases/download/v2.0.28/Breakfast-Orders-Flutter-2.0.28-Windows.zip',
         'digest': 'sha256:${'a' * 64}',
       },
     ],
@@ -29,7 +29,7 @@ void main() {
   test('Only complete releases with a verified Windows asset are offered', () {
     expect(
       eligibleUpdate(release(), updateRepository, appVersion)?['version'],
-      'v2.0.27',
+      'v2.0.28',
     );
     for (final key in ['draft', 'prerelease']) {
       expect(
