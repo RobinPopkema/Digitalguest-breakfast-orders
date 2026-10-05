@@ -2,6 +2,7 @@
 release/
 .update-helper-test-*/
 .helper-launch-probe/
+.update-launch-test-*/
 *.log
 **/build/
 **/.dart_tool/

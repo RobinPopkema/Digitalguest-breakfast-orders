@@ -1021,9 +1021,19 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                         ),
-                        for (var i = 0; i < ids.length; i++)
+                        for (final sortedLine in orderedOrderLines(app.data, {
+                          'lines': [
+                            for (var index = 0; index < ids.length; index++)
+                              <String, dynamic>{
+                                ...entry['lines'][index],
+                                'itemId': ids[index],
+                                'sourceIndex': index,
+                              },
+                          ],
+                        }))
                           Builder(
                             builder: (_) {
+                              final i = sortedLine['sourceIndex'] as int;
                               final line = entry['lines'][i],
                                   item = findById(app.data['items'], ids[i]),
                                   category = findById(

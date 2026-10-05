@@ -13,6 +13,48 @@ import 'fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('Orders and print payload follow current menu order without guest details or source mutation', () async {
+    final data = fixture();
+    data['categories'].insert(0, {'id': 'other', 'name': 'Other', 'color': 7});
+    data['items'] = <Json>[
+      {'id': 'butter', 'name': 'Butter', 'categoryId': 'bakery'},
+      {'id': 'croissant', 'name': 'Croissant', 'categoryId': 'bakery'},
+      {'id': 'moved', 'name': 'Moved item', 'categoryId': 'other'},
+    ];
+    final oldCategory = data['categories'][1] as Json;
+    final order = <String, dynamic>{
+      'id': 'ordered',
+      'room': 'Panorama 1',
+      'slot': slots.first,
+      'comment': 'Keep comment',
+      'guest': {'email': 'private@example.com'},
+      'emailSource': {'text': 'Private source'},
+      'lines': <Json>[
+        lineFor(data['items'][1], oldCategory, 2),
+        lineFor(data['items'][2], oldCategory, 3),
+        lineFor(data['items'][0], oldCategory, 4),
+      ],
+    };
+    data['orders'].add(order);
+    final before = clone(data);
+    final lines = orderedOrderLines(data, order);
+    expect(lines.map((line) => line['itemId']), [
+      'moved',
+      'butter',
+      'croissant',
+    ]);
+    expect(lines.map((line) => line['qty']), [3, 4, 2]);
+    final html = await Printing.document(data, 'orders', {});
+    final encoded = RegExp(
+      r'<script type="application/json" id="order-data">(.*?)</script>',
+    ).firstMatch(html)!.group(1)!;
+    final printed = jsonDecode(encoded)['orders'][0];
+    expect(printed['lines'], lines);
+    expect(printed.containsKey('guest'), isFalse);
+    expect(printed.containsKey('emailSource'), isFalse);
+    expect(html, isNot(contains('private@example.com')));
+    expect(data, before);
+  });
   test('Order dates use received time, preserve manual timestamps and omit unknown legacy dates', () {
     final received = DateTime.utc(2026, 10, 4, 8, 15);
     final order = <String, dynamic>{

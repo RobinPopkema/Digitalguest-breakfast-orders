@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import '../model.dart';
-import 'email_parser.dart';
 import 'browser.dart';
 
 class Printing {
@@ -22,9 +21,11 @@ class Printing {
               'orders': [
                 for (final order in rows(data['orders']))
                   {
-                    ...order,
-                    'guest': guestDetails(order),
-                    'orderDate': orderDateLabel(order),
+                    'id': order['id'],
+                    'room': order['room'],
+                    'slot': order['slot'],
+                    'comment': order['comment'],
+                    'lines': orderedOrderLines(data, order),
                   },
               ],
               'printMode': mode,

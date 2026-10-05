@@ -18,10 +18,13 @@ manually restoring that folder. Diagnostic logs and the downloaded archive are i
 %TEMP%/Breakfast-Orders-Update-*. A failed swap/restart launch restores the old folder.
 The helper validates startup but cannot guarantee every future runtime operation.
 
-Versions 2.0.26 and 2.0.27 need a manual ZIP replacement to obtain the fixed helper
-launcher in 2.0.28. Close the app and replace its application files; the separate
-profile is retained. The launcher uses a normal hidden PowerShell child process,
-captures output, and is tested to survive application exit on Windows.
+Versions 2.0.26–2.0.29 need a manual ZIP replacement to obtain the fixed helper
+in 2.0.30. Close the app and any leftover breakfast_orders.exe background instance
+before replacing application files; the separate profile is retained. The launcher
+uses a hidden PowerShell process with its working directory outside the installation.
+The helper also resets its PowerShell and native working directories. Restart and
+failure recovery open the app visibly. Regression checks launch from the installation
+directory and verify folder replacement after application exit.
 
 Publishing: bump both pubspec.yaml and appVersion in lib/services/updates.dart,
 update RELEASE-NOTES.md, then push main. The Windows release workflow tests, builds,

@@ -1,10 +1,15 @@
 param([Parameter(Mandatory=$true)][string]$Config, [switch]$TestMode, [switch]$TestFailureAfterSwap)
 $ErrorActionPreference='Stop'
 $work=Split-Path -Parent ([IO.Path]::GetFullPath($Config))
+Set-Location -LiteralPath $work
+[Environment]::CurrentDirectory=$work
 $backup=$null
 $installed=$false
 $target=$null
 try {
+  # A PowerShell 7 parent can pass its module paths to Windows PowerShell.
+  # Load the matching built-in module explicitly for JSON and SHA-256 commands.
+  Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Utility') -Force
   $settings=Get-Content -LiteralPath $Config -Raw | ConvertFrom-Json
   $target=[IO.Path]::GetFullPath($settings.install).TrimEnd('\')
   $parent=Split-Path -Parent $target
@@ -59,7 +64,7 @@ try {
   try { Move-Item -LiteralPath $staging -Destination $target; $installed=$true }
   catch { Move-Item -LiteralPath $backup -Destination $target; throw }
   if ($TestMode -and $TestFailureAfterSwap) { throw 'Simulated restart failure.' }
-  if (!$TestMode) { Start-Process -FilePath (Join-Path $target 'breakfast_orders.exe') -ArgumentList ('"--profile='+$profile+'"') -WorkingDirectory $target -WindowStyle Hidden | Out-Null }
+  if (!$TestMode) { Start-Process -FilePath (Join-Path $target 'breakfast_orders.exe') -ArgumentList ('"--profile='+$profile+'"') -WorkingDirectory $profile -WindowStyle Normal | Out-Null }
   'Update installed. Previous application: '+$backup | Set-Content -LiteralPath (Join-Path $work 'result.txt')
 } catch {
   $message=$_.Exception.Message
@@ -74,7 +79,7 @@ try {
   [System.Windows.MessageBox]::Show("The update could not be installed. Your order data is unchanged.`n`n$message`n`nDetails: $work",'Breakfast Orders update') | Out-Null
   }
   if (!$TestMode -and !(Get-Process -Id $settings.pid -ErrorAction SilentlyContinue) -and $target -and (Test-Path -LiteralPath (Join-Path $target 'breakfast_orders.exe'))) {
-    Start-Process -FilePath (Join-Path $target 'breakfast_orders.exe') -ArgumentList ('"--profile='+$profile+'"') -WorkingDirectory $target -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath (Join-Path $target 'breakfast_orders.exe') -ArgumentList ('"--profile='+$profile+'"') -WorkingDirectory $profile -WindowStyle Normal | Out-Null
   }
   exit 1
 }

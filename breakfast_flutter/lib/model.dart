@@ -239,7 +239,19 @@ List<Json> sortedOrders(Json data) {
 
 // Sort a display copy; imported source order and historical lines stay intact.
 List<Json> orderedOrderLines(Json data, Json order) {
-  final original = rows(order['lines']);
+  final currentItems = indexById(data['items']);
+  final currentCategories = indexById(data['categories']);
+  final original = rows(order['lines']).map((line) {
+    final item = currentItems[line['itemId']];
+    final category =
+        currentCategories[item?['categoryId'] ?? line['categoryId']];
+    return <String, dynamic>{
+      ...line,
+      if (item != null) 'categoryId': item['categoryId'],
+      if (category != null) 'categoryName': category['name'],
+      if (category != null) 'categoryColor': category['color'],
+    };
+  }).toList();
   final categories = <dynamic, int>{
     for (var i = 0; i < data['categories'].length; i++)
       data['categories'][i]['id']: i,

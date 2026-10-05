@@ -23,6 +23,9 @@ Future<Process> launchUpdateHelper(
       config.path,
     ],
     mode: ProcessStartMode.normal,
+    // Never inherit the install directory: Windows holds a directory handle
+    // for a process's working directory, preventing the folder swap.
+    workingDirectory: work.path,
   );
   unawaited(process.stdout.pipe(File('${work.path}/stdout.log').openWrite()));
   unawaited(process.stderr.pipe(File('${work.path}/stderr.log').openWrite()));

@@ -6,6 +6,7 @@ Future<void> main(List<String> args) async {
   if (!Platform.isWindows) return;
   if (args.isNotEmpty) {
     final work = Directory(args.first);
+    Directory.current = '${work.path}/app';
     await launchUpdateHelper(
       File('${work.path}/probe.ps1'),
       File('${work.path}/config.json'),
@@ -17,15 +18,15 @@ Future<void> main(List<String> args) async {
     }
     exit(1);
   }
-  final work = Directory.systemTemp.createTempSync(
-    'breakfast-helper-launch-test-',
-  );
+  final work = Directory.current.createTempSync('.update-launch-test-');
   File('${work.path}/config.json').writeAsStringSync('{}');
+  Directory('${work.path}/app').createSync();
   File('${work.path}/probe.ps1').writeAsStringSync(r'''
 param([string]$Config)
 $work=Split-Path -Parent $Config
 'ready' | Set-Content -LiteralPath (Join-Path $work 'ready')
 Start-Sleep -Seconds 2
+Move-Item -LiteralPath (Join-Path $work 'app') -Destination (Join-Path $work 'previous-app') -ErrorAction Stop
 'survived' | Set-Content -LiteralPath (Join-Path $work 'survived')
 ''');
   final parent = await Process.run(Platform.resolvedExecutable, [
@@ -41,5 +42,7 @@ Start-Sleep -Seconds 2
   if (!File('${work.path}/survived').existsSync()) {
     throw StateError('Helper did not survive parent exit.');
   }
-  stdout.writeln('Windows update helper starts and survives application exit.');
+  stdout.writeln(
+    'Windows update helper survives app exit and releases the install folder for replacement.',
+  );
 }

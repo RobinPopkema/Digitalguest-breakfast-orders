@@ -16,8 +16,8 @@ Starting with 2.0.26, the app checks GitHub at startup and every four hours.
 An Update available button appears in the top menu. Installation requires your
 confirmation, verifies the download, retains the previous app folder and restarts.
 Orders, settings and email credentials stay in the local profile.
-Versions 2.0.26 and 2.0.27 require one manual ZIP replacement to obtain the fixed
-Windows update launcher in 2.0.28. Close the app before replacing application files;
+Versions 2.0.26–2.0.29 require a manual ZIP replacement to obtain the fixed
+Windows update helper in 2.0.30. Close the app and any leftover background instance before replacing application files;
 the separate saved-data profile is retained.
 [Update and recovery details](breakfast_flutter/docs/UPDATES.md).
 
@@ -45,7 +45,7 @@ The release workflow tests and builds Windows, validates the updater helper, and
 publishes a release for each new version. Bump both pubspec.yaml and appVersion in
 lib/services/updates.dart and update docs/RELEASE-NOTES.md before publishing.
 
-61 automated Flutter tests plus Windows updater process-survival, installation,
+62 automated Flutter tests plus Windows updater process-survival, folder replacement, installation,
 checksum rejection, archive traversal rejection and rollback checks. Live mailbox credentials and
 physical printers require validation in your own environment.
 

@@ -31,7 +31,10 @@ foreach($scenario in @('success','checksum','rollback','traversal')) {
   @{pid=2147483647;install=$target;profile=$profile;zip=$archive;sha256=$hash} | ConvertTo-Json | Set-Content -LiteralPath $config
   $extra=@()
   if ($scenario -eq 'rollback') { $extra=@('-TestFailureAfterSwap') }
-  & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $project 'assets/update/install.ps1') -Config $config -TestMode @extra
+  $helper=Join-Path $project 'assets/update/install.ps1'
+  $arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$helper+'" -Config "'+$config+'" -TestMode '+($extra -join ' ')
+  $process=Start-Process powershell.exe -ArgumentList $arguments -WorkingDirectory $target -WindowStyle Hidden -Wait -PassThru
+  $global:LASTEXITCODE=$process.ExitCode
   $expected=if($scenario -eq 'success'){'new'}else{'old'}
   if ((Get-Content -LiteralPath (Join-Path $target 'update-marker.txt')) -ne $expected) { throw "Unexpected files after $scenario" }
   if ((Get-Content -LiteralPath (Join-Path $profile 'orders.txt')) -ne 'orders-stay-here') { throw 'Profile changed.' }

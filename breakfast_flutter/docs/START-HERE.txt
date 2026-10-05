@@ -1,4 +1,4 @@
-Breakfast Orders 2.0.29 Expressive preview - Flutter / Material 3 Expressive
+Breakfast Orders 2.0.30 Expressive preview - Flutter / Material 3 Expressive
 Windows 10/11, 64-bit
 
 Extract the whole ZIP, then open breakfast_orders.exe. Keep the data folder and
@@ -7,7 +7,7 @@ is required to run this package. Edge, Chrome or Firefox is needed for printing.
 
 UPDATING FROM AN EARLIER FLUTTER PREVIEW
 Your existing Flutter profile, settings and saved password are reused.
-Versions 2.0.26 and 2.0.27 need one manual replacement to fix their update launcher.
+Versions 2.0.26–2.0.29 need manual replacement to fix their updater. Close any leftover breakfast_orders.exe background instance before replacing files.
 Close the app, then extract the complete new application folder. Do not delete
 your separate %APPDATA%\Breakfast Orders Flutter profile.
 
