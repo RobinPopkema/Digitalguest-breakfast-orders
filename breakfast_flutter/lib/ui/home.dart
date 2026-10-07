@@ -198,32 +198,50 @@ class _HomePageState extends State<HomePage> with RouteAware {
     }
   }
 
-  Widget newOrderControl() => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      FilledButton.icon(
-        onPressed: () => edit(),
-        icon: const Icon(Icons.add),
-        label: const Text('New order'),
-      ),
-      const SizedBox(width: 8),
-      PopupMenuButton<String>(
-        tooltip: 'New order options',
-        enabled: !app.email.busy,
-        style: IconButton.styleFrom(
-          minimumSize: const Size(44, 44),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        ),
-        icon: const Icon(Icons.arrow_drop_down),
-        onSelected: importOrders,
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'today', child: Text('Get today’s orders')),
-          PopupMenuItem(value: 'reimport', child: Text('Reimport orders…')),
+  Widget newOrderControl() {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.primary,
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              shape: const RoundedRectangleBorder(),
+            ),
+            onPressed: () => edit(),
+            icon: const Icon(Icons.add),
+            label: const Text('New order'),
+          ),
+          SizedBox(
+            height: 24,
+            child: VerticalDivider(
+              width: 1,
+              color: colors.onPrimary.withValues(alpha: .35),
+            ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'New order options',
+            enabled: !app.email.busy,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              shape: const RoundedRectangleBorder(),
+              foregroundColor: colors.onPrimary,
+              disabledForegroundColor: colors.onPrimary.withValues(alpha: .38),
+            ),
+            icon: const Icon(Icons.arrow_drop_down),
+            onSelected: importOrders,
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'today', child: Text('Get today’s orders')),
+              PopupMenuItem(value: 'reimport', child: Text('Reimport orders…')),
+            ],
+          ),
         ],
       ),
-    ],
-  );
+    );
+  }
 
   Widget settingsControl() => OutlinedButton.icon(
     onPressed: () =>

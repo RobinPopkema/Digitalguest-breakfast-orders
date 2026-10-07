@@ -1,4 +1,4 @@
-# Breakfast Orders 2.0.35 Expressive preview
+# Breakfast Orders 2.0.36 Expressive preview
 
 A separate Windows rebuild of Breakfast Orders 1.22.2 using Flutter 3.47.6,
 Dart 3.13.5 and Material 3 Expressive styling. The original Electron source is retained unchanged
@@ -18,6 +18,11 @@ Updating from an earlier Flutter preview reuses the existing Flutter profile and
 The Expressive update uses stock Flutter controls with custom color, typography,
 shape and spring-motion treatments; it adds no dependencies. Reduced motion
 is respected. Saved-data compatibility and print layouts are preserved.
+
+## Changes in 2.0.36
+
+New order and its submenu now share one joined button with an internal divider,
+matching the Print button layout while retaining the primary blue styling.
 
 ## Changes in 2.0.35
 

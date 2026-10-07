@@ -1,7 +1,7 @@
 name: breakfast_orders
 description: Breakfast Orders for Windows with Material 3 Expressive styling.
 publish_to: none
-version: 2.0.35+36
+version: 2.0.36+37
 environment:
   sdk: ^3.13.0
 dependencies:
