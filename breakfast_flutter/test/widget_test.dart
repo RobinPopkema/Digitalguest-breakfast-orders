@@ -33,10 +33,10 @@ void main() {
   }
 
   testWidgets(
-    'New order keeps manual entry and offers today and reimport actions',
+    'Get orders offers import actions while New order keeps manual entry',
     (tester) async {
       await open(tester);
-      await tester.tap(find.byTooltip('New order options'));
+      await tester.tap(find.byTooltip('Get orders options'));
       await tester.pumpAndSettle();
       expect(find.text('Get today’s orders'), findsOneWidget);
       expect(find.text('Reimport orders…'), findsOneWidget);

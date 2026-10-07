@@ -115,46 +115,80 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   Widget updateControl() {
     final mail = app.email;
-    return Row(
-      key: const ValueKey('update-control'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Tooltip(
-          message: mail.busy
-              ? 'Updating…'
-              : mail.error
-              ? 'Update failed — retry'
-              : 'Get orders',
-          child: FilledButton.tonalIcon(
-            onPressed: mail.busy ? null : refreshOrders,
-            icon: mail.busy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      semanticsLabel: 'Updating',
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.secondaryContainer,
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        key: const ValueKey('update-control'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Tooltip(
+            message: mail.busy
+                ? 'Updating…'
+                : mail.error
+                ? 'Update failed — retry'
+                : 'Get orders',
+            child: FilledButton.tonalIcon(
+              style: FilledButton.styleFrom(
+                shape: const RoundedRectangleBorder(),
+              ),
+              onPressed: mail.busy ? null : refreshOrders,
+              icon: mail.busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        semanticsLabel: 'Updating',
+                      ),
+                    )
+                  : Icon(
+                      mail.error
+                          ? Icons.sync_problem_outlined
+                          : Icons.refresh_rounded,
+                      color: mail.error
+                          ? Theme.of(context).colorScheme.error
+                          : null,
                     ),
-                  )
-                : Icon(
-                    mail.error
-                        ? Icons.sync_problem_outlined
-                        : Icons.refresh_rounded,
-                    color: mail.error
-                        ? Theme.of(context).colorScheme.error
-                        : null,
-                  ),
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Get orders'),
-                const SizedBox(width: 12),
-                UpdateCountdown(mail),
-              ],
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Get orders'),
+                  const SizedBox(width: 12),
+                  UpdateCountdown(mail),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+          SizedBox(
+            height: 24,
+            child: VerticalDivider(
+              width: 1,
+              color: colors.onSecondaryContainer.withValues(alpha: .35),
+            ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Get orders options',
+            enabled: !app.email.busy,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              shape: const RoundedRectangleBorder(),
+              foregroundColor: colors.onSecondaryContainer,
+              disabledForegroundColor: colors.onSecondaryContainer.withValues(
+                alpha: .38,
+              ),
+            ),
+            icon: const Icon(Icons.arrow_drop_down),
+            onSelected: importOrders,
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'today', child: Text('Get today’s orders')),
+              PopupMenuItem(value: 'reimport', child: Text('Reimport orders…')),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -198,50 +232,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
     }
   }
 
-  Widget newOrderControl() {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: colors.primary,
-      borderRadius: BorderRadius.circular(10),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              shape: const RoundedRectangleBorder(),
-            ),
-            onPressed: () => edit(),
-            icon: const Icon(Icons.add),
-            label: const Text('New order'),
-          ),
-          SizedBox(
-            height: 24,
-            child: VerticalDivider(
-              width: 1,
-              color: colors.onPrimary.withValues(alpha: .35),
-            ),
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'New order options',
-            enabled: !app.email.busy,
-            style: IconButton.styleFrom(
-              minimumSize: const Size(44, 44),
-              shape: const RoundedRectangleBorder(),
-              foregroundColor: colors.onPrimary,
-              disabledForegroundColor: colors.onPrimary.withValues(alpha: .38),
-            ),
-            icon: const Icon(Icons.arrow_drop_down),
-            onSelected: importOrders,
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'today', child: Text('Get today’s orders')),
-              PopupMenuItem(value: 'reimport', child: Text('Reimport orders…')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget newOrderControl() => FilledButton.icon(
+    onPressed: () => edit(),
+    icon: const Icon(Icons.add),
+    label: const Text('New order'),
+  );
 
   Widget settingsControl() => OutlinedButton.icon(
     onPressed: () =>

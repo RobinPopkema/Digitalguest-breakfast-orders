@@ -73,6 +73,19 @@ class _ReimportOrdersState extends State<ReimportOrders> {
     await load();
   }
 
+  Future<void> changeDay(int offset) async {
+    final next = DateTime(day.year, day.month, day.day + offset);
+    final today = DateUtils.dateOnly(widget.email.now());
+    if (loading ||
+        widget.email.busy ||
+        next.isBefore(DateTime(2000)) ||
+        next.isAfter(today)) {
+      return;
+    }
+    setState(() => day = next);
+    await load();
+  }
+
   void import() {
     try {
       final count = widget.email.reimportSelected(
@@ -119,14 +132,44 @@ class _ReimportOrdersState extends State<ReimportOrders> {
                     runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      OutlinedButton.icon(
-                        key: const ValueKey('reimport-date'),
-                        onPressed: working ? null : chooseDay,
-                        icon: const Icon(Icons.calendar_month_outlined),
-                        label: Text(
-                          MaterialLocalizations.of(context)
-                              .formatMediumDate(day),
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton.outlined(
+                            key: const ValueKey('reimport-previous-day'),
+                            tooltip: 'Previous day',
+                            onPressed:
+                                working ||
+                                    !DateUtils.dateOnly(day)
+                                        .isAfter(DateTime(2000))
+                                ? null
+                                : () => changeDay(-1),
+                            icon: const Icon(Icons.chevron_left),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            key: const ValueKey('reimport-date'),
+                            onPressed: working ? null : chooseDay,
+                            icon: const Icon(Icons.calendar_month_outlined),
+                            label: Text(
+                              MaterialLocalizations.of(context)
+                                  .formatMediumDate(day),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.outlined(
+                            key: const ValueKey('reimport-next-day'),
+                            tooltip: 'Next day',
+                            onPressed:
+                                working ||
+                                    !DateUtils.dateOnly(day).isBefore(
+                                      DateUtils.dateOnly(widget.email.now()),
+                                    )
+                                ? null
+                                : () => changeDay(1),
+                            icon: const Icon(Icons.chevron_right),
+                          ),
+                        ],
                       ),
                       OutlinedButton.icon(
                         onPressed: working ? null : load,

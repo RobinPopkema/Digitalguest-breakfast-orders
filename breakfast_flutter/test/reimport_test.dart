@@ -125,6 +125,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Day arrows cross month boundaries, clear selection and stop at today',
+    (tester) async {
+      await open(tester);
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const ValueKey('reimport-next-day')))
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.byType(CheckboxListTile).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Import selected (1)'), findsOneWidget);
+      await tester.tap(find.byTooltip('Previous day'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+      expect(find.text('Import selected (0)'), findsOneWidget);
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const ValueKey('reimport-next-day')))
+            .onPressed,
+        isNotNull,
+      );
+      await tester.tap(find.byKey(const ValueKey('reimport-next-day')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckboxListTile), findsNWidgets(2));
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const ValueKey('reimport-next-day')))
+            .onPressed,
+        isNull,
+      );
+      expect(email.queue, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Date picker can import just one order from an earlier day', (
     tester,
   ) async {

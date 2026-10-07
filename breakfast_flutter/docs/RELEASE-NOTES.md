@@ -1,4 +1,5 @@
-# Breakfast Orders 2.0.36
+# Breakfast Orders 2.0.37
 
-- Joined the New order button and its dropdown into one split button, matching the Print button layout.
-- Retained the blue primary styling, manual order entry and both import actions.
+- Moved Get today’s orders and Reimport orders to a joined dropdown on Get orders.
+- New order is once again a single button for manual entry.
+- Added previous/next-day arrows around the reimport date picker. Each step loads that day and clears the previous selection; the next arrow is disabled on today.
