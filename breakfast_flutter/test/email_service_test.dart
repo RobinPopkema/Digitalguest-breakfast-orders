@@ -103,6 +103,114 @@ void main() {
     service.dispose();
     dir.deleteSync(recursive: true);
   });
+  test('Get today’s orders restores deleted orders but skips confirmed and pending orders', () async {
+    await service.saveSettings(input);
+    await service.check();
+    final original = clone(service.queue.single);
+    service.accept({
+      'id': original['id'],
+      'safeCabinId': '8',
+      'confirmed': true,
+      'mode': 'quick',
+    });
+    await service.check(reimport: true);
+    expect(service.queue, isEmpty);
+    expect(data['orders'], hasLength(1));
+    data['orders'] = <Json>[];
+    await service.check(reimport: true);
+    expect(service.queue, hasLength(1));
+    expect(service.queue.single['id'], isNot(original['id']));
+    expect(service.queue.single['key'], original['key']);
+    expect(service.queue.single['lines'], original['lines']);
+    await service.check(reimport: true);
+    await service.check();
+    expect(service.queue, hasLength(1));
+  });
+
+  test('One older-day order can be reimported without changing normal deduplication', () async {
+    mail.add(10, source(id: 'older'), '30-Sep-2026 08:00:00 +0000');
+    mail.add(11, source(id: 'older'), '30-Sep-2026 08:00:00 +0000');
+    await service.saveSettings(input);
+    final before = clone(service.imports);
+    mail.rejectSearch =
+        2; // Older-day recovery also supports the read-only fallback.
+    final candidates = await service.reimportCandidates(DateTime(2026, 9, 30));
+    expect(candidates, hasLength(1));
+    expect(service.imports, before);
+    expect(candidates.single['receivedAt'], '2026-09-30T08:00:00.000Z');
+    expect(service.reimportSelected(candidates), 1);
+    expect(service.quickReady(service.queue.single), isTrue);
+    expect(service.reimportSelected(candidates), 0);
+    final received = service.queue.single['receivedAt'];
+    service.dismiss(service.queue.single['id']);
+    expect(service.reimportSelected(candidates), 1);
+    expect(service.queue.single['receivedAt'], received);
+    expect(service.queue.single.containsKey('importUidKey'), isFalse);
+    expect(service.queue.single.containsKey('importAccount'), isFalse);
+    await service.check();
+    expect(
+      service.queue,
+      hasLength(2),
+    ); // Today's separate order is still found normally.
+  });
+
+  test('Multi-select reimport rechecks merged orders and duplicates at commit time', () async {
+    mail.add(10, source(id: 'second'), '01-Oct-2026 09:00:00 +0000');
+    mail.add(11, source(id: 'third'), '01-Oct-2026 10:00:00 +0000');
+    await service.saveSettings(input);
+    final candidates = await service.reimportCandidates(clock);
+    expect(candidates, hasLength(3));
+    data['orders'] = <Json>[
+      {
+        'mergedOrders': [
+          {
+            'mergedOrders': [
+              {
+                'emailSource': {'key': candidates.first['key']},
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    expect(
+      service.importBlockReason(candidates.first['key']),
+      'Already in orders',
+    );
+    expect(service.reimportSelected([...candidates, ...candidates]), 2);
+    expect(service.queue, hasLength(2));
+    expect(
+      service.importBlockReason(candidates.last['key']),
+      'Already pending',
+    );
+    expect(service.reimportSelected(candidates), 0);
+  });
+
+  test(
+    'Today’s explicit import reads more than the normal 100-message batch',
+    () async {
+      mail.messages.clear();
+      for (var i = 0; i < 105; i++) {
+        mail.add(i + 1, source(id: 'bulk-$i'), '01-Oct-2026 08:00:00 +0000');
+      }
+      await service.saveSettings(input);
+      await service.check(reimport: true);
+      expect(service.error, isFalse, reason: service.message);
+      expect(service.queue, hasLength(105));
+      await service.check();
+      expect(service.queue, hasLength(105));
+    },
+  );
+
+  test('Changing the mailbox after loading prevents stale reimports', () async {
+    await service.saveSettings(input);
+    final candidates = await service.reimportCandidates(clock);
+    final before = clone(service.imports);
+    service.config['folder'] = 'Different folder';
+    expect(() => service.reimportSelected(candidates), throwsStateError);
+    expect(service.imports, before);
+  });
+
   test('Hidden categories block automatic and explicit imports without losing item flags', () async {
     await service.saveSettings(input);
     await service.check();

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 
 import '../model.dart';
@@ -193,74 +194,47 @@ class EmailService extends ChangeNotifier {
         utf8.encode('${config['host'].toLowerCase()}\u0000${config['user']}'),
       )
       .toString();
-  Future<void> check({bool resetTimer = false}) async {
+  Future<void> check({bool resetTimer = false, bool reimport = false}) async {
     if (busy) return;
     if (!configured) throw StateError('Configure your email account first.');
     if (resetTimer) start(checkImmediately: false);
     busy = true;
     message = 'Checking the selected folder…';
     notifyListeners();
-    var imported = 0, ignored = 0;
+    var imported = 0, ignored = 0, skipped = 0;
     try {
       await withClient(config, (client) async {
         final box = await client.examine(config['folder']);
         final base = '$account:${config['folder']}:${box['uidValidity']}:';
-        final today = now(),
-            start = DateTime(now().year, now().month, now().day),
-            end = DateTime(now().year, now().month, now().day + 1);
-        String date(DateTime d) =>
-            '${d.day}-${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]}-${d.year}';
-        final dates =
-            'SINCE ${date(DateTime(today.year, today.month, today.day - 1))} BEFORE ${date(DateTime(today.year, today.month, today.day + 2))}';
-        List<int>? ids = [];
-        if (box['exists'] != 0) {
-          try {
-            ids = await client.search('$dates FROM "${config['sender']}"');
-          } catch (_) {
-            try {
-              ids = await client.search(dates);
-            } catch (_) {
-              ids = null;
-            }
-          }
-        }
-        final metadata = await client.metadata(
-          ids?.where((id) => imports['seen']['$base$id'] != true).toList(),
+        final day = await _dayMessages(
+          client,
+          box,
+          base,
+          now(),
+          ignoreSeen: reimport,
         );
-        if (ids == null && metadata.isEmpty && box['exists'] != 0) {
-          throw StateError(
-            'Could not read message dates from the selected folder.',
-          );
-        }
-        final messages = metadata.where((m) {
-          final received = receiptDate(m.internalDate);
-          return m.uid != null &&
-              imports['seen']['$base${m.uid}'] != true &&
-              received != null &&
-              !received.isBefore(start) &&
-              received.isBefore(end);
-        }).toList();
-        for (final meta in messages.take(100)) {
-          if (queue.length >= 1000) {
-            throw StateError(
-              'The review queue is full. Review or dismiss imports first.',
-            );
-          }
+        final messages = day.messages;
+        for (final meta in reimport ? messages : messages.take(100)) {
           if ((meta.size ?? 0) > 2 * 1024 * 1024) {
             throw StateError('Email UID ${meta.uid} is larger than 2 MB.');
           }
           final full = await client.body(meta.uid!);
           if (full == null) continue;
           final parsed = parseMessage(full, config['sender']);
-          final key =
-              '$account:message:${parsed['requestId'] ?? parsed['messageId'] ?? sha256.convert(utf8.encode(full.renderMessage()))}';
+          final key = _messageKey(parsed, full);
           final next = clone(imports);
           next['seen']['$base${meta.uid}'] = true;
-          if (next['seen'][key] != true) {
+          if ((reimport || next['seen'][key] != true) &&
+              importBlockReason(key) == null) {
             next['seen'][key] = true;
             if (parsed['kind'] == 'ignore') {
               ignored++;
             } else {
+              if (queue.length >= 1000) {
+                throw StateError(
+                  'The review queue is full. Review or dismiss imports first.',
+                );
+              }
               next['queue'].add({
                 ...parsed,
                 'id': newId(),
@@ -273,12 +247,14 @@ class EmailService extends ChangeNotifier {
               });
               imported++;
             }
+          } else if (reimport) {
+            skipped++;
           }
           store.write('email-imports.json', next);
           imports = next;
         }
         message =
-            '$imported new orders awaiting review; $ignored dinner/other emails ignored.${ids == null ? ' Compatibility folder scan used.' : ''}${messages.length > 100 ? ' More emails will be checked next time.' : ''}';
+            '$imported new orders awaiting review; $ignored dinner/other emails ignored.${reimport ? ' $skipped already present and skipped.' : ''}${day.fallback ? ' Compatibility folder scan used.' : ''}${!reimport && messages.length > 100 ? ' More emails will be checked next time.' : ''}';
       });
       lastChecked = now();
       error = false;
@@ -289,6 +265,155 @@ class EmailService extends ChangeNotifier {
       busy = false;
       notifyListeners();
     }
+  }
+
+  String _messageKey(Json parsed, MimeMessage full) =>
+      '$account:message:${parsed['requestId'] ?? parsed['messageId'] ?? sha256.convert(utf8.encode(full.renderMessage()))}';
+
+  String? importBlockReason(String key) {
+    if (rows(readOrders()['orders'])
+        .any((order) => orderHasEmailKey(order, key))) {
+      return 'Already in orders';
+    }
+    if (queue.any((entry) => entry['key'] == key)) return 'Already pending';
+    return null;
+  }
+
+  Future<({List<MimeMessage> messages, bool fallback})> _dayMessages(
+    MailTransport client,
+    Json box,
+    String base,
+    DateTime date, {
+    bool ignoreSeen = false,
+  }) async {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = DateTime(date.year, date.month, date.day + 1);
+    String imapDate(DateTime d) =>
+        '${d.day}-${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]}-${d.year}';
+    // Search a timezone-safe envelope, then filter by the exact local day.
+    final dates =
+        'SINCE ${imapDate(DateTime(date.year, date.month, date.day - 1))} BEFORE ${imapDate(DateTime(date.year, date.month, date.day + 2))}';
+    List<int>? ids = [];
+    if (box['exists'] != 0) {
+      try {
+        ids = await client.search('$dates FROM "${config['sender']}"');
+      } catch (_) {
+        try {
+          ids = await client.search(dates);
+        } catch (_) {
+          ids = null;
+        }
+      }
+    }
+    final metadata = await client.metadata(
+      ids
+          ?.where((id) => ignoreSeen || imports['seen']['$base$id'] != true)
+          .toList(),
+    );
+    if (ids == null && metadata.isEmpty && box['exists'] != 0) {
+      throw StateError(
+        'Could not read message dates from the selected folder.',
+      );
+    }
+    final messages = metadata.where((m) {
+      final received = receiptDate(m.internalDate);
+      return m.uid != null &&
+          (ignoreSeen || imports['seen']['$base${m.uid}'] != true) &&
+          received != null &&
+          !received.isBefore(start) &&
+          received.isBefore(end);
+    }).toList();
+    return (messages: messages, fallback: ids == null);
+  }
+
+  Future<List<Json>> reimportCandidates(DateTime date) async {
+    if (busy) throw StateError('Wait for the current email check to finish.');
+    if (!configured) throw StateError('Configure your email account first.');
+    busy = true;
+    notifyListeners();
+    try {
+      return await withClient(config, (client) async {
+        final box = await client.examine(config['folder']);
+        final base = '$account:${config['folder']}:${box['uidValidity']}:';
+        final day = await _dayMessages(
+          client,
+          box,
+          base,
+          date,
+          ignoreSeen: true,
+        );
+        final candidates = <String, Json>{};
+        for (final meta in day.messages) {
+          if ((meta.size ?? 0) > 2 * 1024 * 1024) {
+            throw StateError('Email UID ${meta.uid} is larger than 2 MB.');
+          }
+          final full = await client.body(meta.uid!);
+          if (full == null) continue;
+          final parsed = parseMessage(full, config['sender']);
+          if (parsed['kind'] == 'ignore') continue;
+          final key = _messageKey(parsed, full);
+          candidates.putIfAbsent(
+            key,
+            () => {
+              ...parsed,
+              'key': key,
+              'receivedAt': receiptDate(meta.internalDate)!
+                  .toUtc()
+                  .toIso8601String(),
+              'folder': config['folder'],
+              'importAccount': account,
+              'importUidKey': '$base${meta.uid}',
+            },
+          );
+        }
+        return candidates.values.toList()..sort(
+          (a, b) => '${b['receivedAt']}'.compareTo('${a['receivedAt']}'),
+        );
+      });
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  int reimportSelected(List<Json> candidates) {
+    if (busy) throw StateError('Wait for the current email check to finish.');
+    final next = clone(imports);
+    var added = 0;
+    for (final candidate in candidates) {
+      if (candidate['importAccount'] != account ||
+          candidate['folder'] != config['folder']) {
+        throw StateError(
+          'Email settings changed. Reload the order list first.',
+        );
+      }
+      final key = candidate['key'] as String;
+      if (candidate['kind'] == 'ignore' ||
+          importBlockReason(key) != null ||
+          rows(next['queue']).any((entry) => entry['key'] == key)) {
+        continue;
+      }
+      if (rows(next['queue']).length >= 1000) {
+        throw StateError(
+          'The review queue is full. Review or dismiss imports first.',
+        );
+      }
+      final entry = clone(candidate)
+        ..remove('importAccount')
+        ..remove('importUidKey');
+      next['queue'].add({
+        ...entry,
+        'id': newId(),
+        'importedAt': now().toUtc().toIso8601String(),
+      });
+      next['seen'][key] = true;
+      next['seen'][candidate['importUidKey']] = true;
+      added++;
+    }
+    store.write('email-imports.json', next);
+    imports = next;
+    notifyListeners();
+    return added;
   }
 
   List<String> matches(Json entry) {

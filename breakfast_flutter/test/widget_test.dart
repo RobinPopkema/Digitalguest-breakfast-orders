@@ -33,6 +33,26 @@ void main() {
   }
 
   testWidgets(
+    'New order keeps manual entry and offers today and reimport actions',
+    (tester) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('New order options'));
+      await tester.pumpAndSettle();
+      expect(find.text('Get today’s orders'), findsOneWidget);
+      expect(find.text('Reimport orders…'), findsOneWidget);
+      await tester.tap(find.text('Reimport orders…'));
+      await tester.pumpAndSettle();
+      // An unconfigured mailbox leads to the existing email setup.
+      expect(find.byKey(const ValueKey('settings-section-2')), findsOneWidget);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New order').first);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('order-cabin')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'Dragging an expanded category collapses its contents and reopens on release',
     (tester) async {
       await open(tester);

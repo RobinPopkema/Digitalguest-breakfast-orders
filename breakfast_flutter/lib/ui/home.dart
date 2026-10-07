@@ -8,6 +8,7 @@ import 'common.dart';
 import 'email_dialogs.dart';
 import 'manage.dart';
 import 'order_editor.dart';
+import 'reimport_orders.dart';
 import 'expressive_theme.dart';
 import 'update_countdown.dart';
 
@@ -160,6 +161,68 @@ class _HomePageState extends State<HomePage> with RouteAware {
   void edit([Json? order]) => showDialog(
     context: context,
     builder: (_) => OrderEditor(app, order: order),
+  );
+
+  Future<void> importOrders(String action) async {
+    if (!app.email.configured) {
+      settings();
+      return;
+    }
+    if (action == 'today') {
+      await run(() async {
+        await app.email.check(resetTimer: true, reimport: true);
+        if (!mounted) return;
+        if (app.email.error) {
+          showError(context, app.email.message);
+        } else {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(app.email.message)));
+        }
+      });
+    } else {
+      final count = await showDialog<int>(
+        context: context,
+        builder: (_) => ReimportOrders(app.email),
+      );
+      if (mounted && count != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              count == 0
+                  ? 'No orders added; the selected orders are already present.'
+                  : '$count orders added to Pending orders.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget newOrderControl() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      FilledButton.icon(
+        onPressed: () => edit(),
+        icon: const Icon(Icons.add),
+        label: const Text('New order'),
+      ),
+      const SizedBox(width: 8),
+      PopupMenuButton<String>(
+        tooltip: 'New order options',
+        enabled: !app.email.busy,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        ),
+        icon: const Icon(Icons.arrow_drop_down),
+        onSelected: importOrders,
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'today', child: Text('Get today’s orders')),
+          PopupMenuItem(value: 'reimport', child: Text('Reimport orders…')),
+        ],
+      ),
+    ],
   );
 
   Widget settingsControl() => OutlinedButton.icon(
@@ -385,11 +448,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                               : 'Delete selected (${selected.length})',
                         ),
                       ),
-                      FilledButton.icon(
-                        onPressed: () => edit(),
-                        icon: const Icon(Icons.add),
-                        label: const Text('New order'),
-                      ),
+                      newOrderControl(),
                     ],
                   ),
                 ],

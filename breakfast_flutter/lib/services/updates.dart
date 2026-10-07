@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 import '../model.dart';
 import 'update_helper.dart';
 
-const appVersion = '2.0.34';
+const appVersion = '2.0.35';
 const updateRepository = String.fromEnvironment(
   'UPDATE_REPOSITORY',
   defaultValue: 'RobinPopkema/Digitalguest-breakfast-orders',

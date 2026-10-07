@@ -25,6 +25,7 @@ the separate saved-data profile is retained.
 ## Features
 
 - Read-only IMAP importing, pending-order review and duplicate suppression.
+- Import all orders received today, or reimport selected orders from a chosen day.
 - Exact accommodation matching; no ambiguous number aliases.
 - Guest contact and reservation details; saved HTML email previews.
 - Categories, menu ordering and availability; compact cabin management.
@@ -46,7 +47,7 @@ The release workflow tests and builds Windows, validates the updater helper, and
 publishes a release for each new version. Bump both pubspec.yaml and appVersion in
 lib/services/updates.dart and update docs/RELEASE-NOTES.md before publishing.
 
-72 automated Flutter tests plus Windows updater process-survival, folder replacement, installation,
+80 automated Flutter tests plus Windows updater process-survival, folder replacement, installation,
 checksum rejection, archive traversal rejection and rollback checks. Live mailbox credentials and
 physical printers require validation in your own environment.
 
