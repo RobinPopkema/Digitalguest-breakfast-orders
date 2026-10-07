@@ -344,8 +344,7 @@ class EmailService extends ChangeNotifier {
     final entry = queue.where((q) => q['id'] == input['id']).firstOrNull;
     if (entry == null) throw StateError('This email was already reviewed.');
     final data = clone(readOrders());
-    if (rows(data['orders'])
-        .any((o) => o['emailSource']?['key'] == entry['key'])) {
+    if (rows(data['orders']).any((o) => orderHasEmailKey(o, entry['key']))) {
       dismiss(entry['id']);
       return;
     }

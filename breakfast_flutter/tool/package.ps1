@@ -1,4 +1,4 @@
-param([string]$Version='2.0.30-expressive-preview')
+param([string]$Version='2.0.31-expressive-preview')
 $ErrorActionPreference='Stop'
 $project=Split-Path -Parent $PSScriptRoot
 $workspace=Split-Path -Parent $project

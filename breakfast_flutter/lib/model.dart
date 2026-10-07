@@ -26,6 +26,56 @@ String orderDateLabel(Json order) {
 }
 
 Json clone(Json value) => jsonDecode(jsonEncode(value)) as Json;
+bool orderHasEmailKey(Json order, dynamic key) =>
+    key != null &&
+    (order['emailSource']?['key'] == key ||
+        rows(order['mergedOrders'] ?? [])
+            .any((source) => orderHasEmailKey(source, key)));
+
+// Keep every original order for contact/email history; change only the active list.
+void mergeSelectedOrders(Json data, Set<String> ids, String primaryId) {
+  final orders = rows(data['orders']);
+  final chosen = orders.where((o) => ids.contains(o['id'])).toList();
+  if (ids.length < 2 ||
+      chosen.length != ids.length ||
+      !ids.contains(primaryId)) {
+    throw StateError('Select at least two existing orders to merge.');
+  }
+  final primary = chosen.firstWhere((o) => o['id'] == primaryId);
+  final sources = [primary, ...chosen.where((o) => o != primary)];
+  final combined = <String, Json>{};
+  for (final order in sources) {
+    for (final line in rows(order['lines'])) {
+      final key = line['itemId'] != null
+          ? jsonEncode(['id', line['itemId']])
+          : jsonEncode(['name', line['categoryId'], normalize(line['name'])]);
+      final existing = combined[key];
+      if (existing == null) {
+        combined[key] = {...line};
+      } else {
+        existing['qty'] = (existing['qty'] as num) + (line['qty'] as num);
+      }
+    }
+  }
+  final result = <String, dynamic>{
+    ...primary,
+    'lines': combined.values.toList(),
+    'comment': sources
+        .map((o) => '${o['comment'] ?? ''}'.trim())
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .join('\n\n'),
+    'mergedOrders': sources.map(clone).toList(),
+  };
+  data['orders'] = <Json>[
+    for (final order in orders)
+      if (order['id'] == primaryId)
+        result
+      else if (!ids.contains(order['id']))
+        order,
+  ];
+}
+
 List<Json> rows(dynamic value) => (value as List).cast<Json>();
 String normalize(dynamic value) => unicode
     .nfkc('${value ?? ''}')

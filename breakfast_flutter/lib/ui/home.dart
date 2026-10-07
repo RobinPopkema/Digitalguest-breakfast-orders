@@ -237,10 +237,6 @@ class _HomePageState extends State<HomePage> {
                 value: 'schedule',
                 child: Text('Delivery schedule'),
               ),
-              const PopupMenuItem(
-                value: 'totals',
-                child: Text('Items overview'),
-              ),
               const PopupMenuItem(value: 'timetable', child: Text('Timetable')),
             ],
           ),
@@ -277,6 +273,72 @@ class _HomePageState extends State<HomePage> {
         selected.clear();
       });
     }
+  }
+
+  Future<void> mergeOrders() async {
+    final ids = {...selected};
+    final orders = sortedOrders(app.data)
+        .where((o) => ids.contains(o['id']))
+        .toList();
+    if (orders.length < 2) return;
+    var primary = orders.first['id'] as String;
+    final target = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, refresh) => AlertDialog(
+          title: Text('Merge ${orders.length} orders?'),
+          content: SizedBox(
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Quantities are added together and comments are combined. Original guest details and emails remain available in the merged order.',
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: primary,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Keep cabin and delivery from',
+                  ),
+                  items: [
+                    for (var i = 0; i < orders.length; i++)
+                      DropdownMenuItem(
+                        value: orders[i]['id'] as String,
+                        child: Text(
+                          '${i + 1}. ${orders[i]['room']} · ${orders[i]['slot']}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (value) => refresh(() => primary = value!),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, primary),
+              child: const Text('Merge orders'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (target == null || !mounted) return;
+    await run(() async {
+      app.edit((data) => mergeSelectedOrders(data, ids, target));
+      setState(() {
+        selected.clear();
+        expanded = target;
+      });
+    });
   }
 
   @override
@@ -338,6 +400,12 @@ class _HomePageState extends State<HomePage> {
                       updateControl(),
                       printControl(),
                       settingsControl(),
+                      if (selected.length >= 2)
+                        OutlinedButton.icon(
+                          onPressed: mergeOrders,
+                          icon: const Icon(Icons.merge),
+                          label: Text('Merge selected (${selected.length})'),
+                        ),
                       OutlinedButton.icon(
                         onPressed: orders.isEmpty ? null : deleteOrders,
                         style: OutlinedButton.styleFrom(
@@ -733,6 +801,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
+                        if (order['mergedOrders'] is List)
+                          originalOrders(order),
                         if (order['emailSource'] is Json &&
                             (order['emailSource']['html'] != null ||
                                 order['emailSource']['text'] != null))
@@ -749,6 +819,32 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  Widget originalOrders(Json order) => Material(
+    color: Colors.transparent,
+    child: ExpansionTile(
+      title: Text('Original orders (${rows(order['mergedOrders']).length})'),
+      children: [
+        for (final source in rows(order['mergedOrders']))
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${source['room']} · ${source['slot']}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                GuestContact(source),
+                if (source['emailSource'] is Json)
+                  ShowEmailButton(source['emailSource']),
+                if (source['mergedOrders'] is List) originalOrders(source),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
 
   Widget emailRow(Json entry) {
     final ids = app.email.matches(entry);

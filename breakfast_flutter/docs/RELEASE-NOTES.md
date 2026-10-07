@@ -1,9 +1,8 @@
-Breakfast Orders 2.0.30
+Breakfast Orders 2.0.31
 
-- Fixed the updater holding its own installation folder open. Both the launcher and PowerShell helper switch to the temporary update folder before replacement.
-- Successful updates and failure recovery reopen the app visibly instead of creating a hidden background instance.
-- Added regression checks that launch from the installation folder and verify it can be renamed after app exit.
-- Pending and confirmed orders, and PDF delivery slips, follow the configured category and item order. Historical removed items and quantities are retained.
-- Delivery-slip headers show only cabin and delivery time. Guest contact details, reservation numbers and received/creation timestamps remain in the app, not on slips.
+- Merge two or more selected orders. Choose the order whose cabin and delivery time should be kept; quantities are added and comments combined. Original guest details and emails remain accessible, and duplicate email detection includes merged orders.
+- Item totals are now a Total column between the item name and delivery times in Timetable. The separate Items overview printout is removed.
+- The overview is rotated 90 degrees on landscape A4 so Edge can print every page with the same orientation.
+- Delivery-slip item rows no longer have background shading. Category pills and timetable striping remain.
 
-Updating from 2.0.26–2.0.29: close the app and any leftover breakfast_orders.exe background instance, then extract the complete Windows ZIP and run breakfast_orders.exe. These older builds contain the faulty updater and need manual replacement. Your saved profile remains in its separate AppData folder.
+From 2.0.30, use Settings > About & licenses > Check for updates, then Update available. Earlier versions need manual ZIP replacement to obtain the repaired updater. Saved data remains compatible.

@@ -38,6 +38,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Verify updater and package
         run: |
+          node ./breakfast_flutter/tool/test-print.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           dart run ./breakfast_flutter/tool/test_update_launcher.dart
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & ./breakfast_flutter/tool/test-update-helper.ps1

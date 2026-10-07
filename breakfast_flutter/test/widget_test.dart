@@ -32,6 +32,56 @@ void main() {
   }
 
   testWidgets(
+    'Selected orders merge after confirmation and retain original details',
+    (tester) async {
+      app.edit(
+        (data) => data['orders'] = <Json>[
+          for (var i = 0; i < 3; i++)
+            {
+              'id': 'merge$i',
+              'room': '${8 + i}',
+              'slot': slots[i],
+              'comment': 'Note $i',
+              'guest': {'name': 'Guest $i'},
+              'emailSource': {'key': 'mail$i', 'text': 'Email $i'},
+              'lines': <Json>[
+                lineFor(data['items'][0], data['categories'][0], i + 1),
+              ],
+            },
+        ],
+      );
+      await open(tester);
+      expect(find.text('Merge selected (3)'), findsNothing);
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Merge selected (3)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(app.data['orders'].length, 3);
+      await tester.tap(find.text('Merge selected (3)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('2. 9 · ${slots[1]}').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Merge orders'));
+      await tester.pumpAndSettle();
+      final merged = app.store.loadOrders()['orders'].single as Json;
+      expect(merged['room'], '9');
+      expect(merged['slot'], slots[1]);
+      expect(merged['lines'].single['qty'], 6);
+      expect(merged['mergedOrders'].length, 3);
+      expect(merged['comment'], contains('Note 0'));
+      expect(orderHasEmailKey(merged, 'mail0'), isTrue);
+      expect(orderHasEmailKey(merged, 'mail2'), isTrue);
+      expect(find.text('Original orders (3)'), findsOneWidget);
+      expect(find.text('Merge selected (3)'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Update prompt appears only for an available release and waits for confirmation',
     (tester) async {
       await open(tester);
@@ -618,7 +668,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Orders only'), findsOneWidget);
     expect(find.text('All printouts'), findsNothing);
-    expect(find.text('Items overview'), findsOneWidget);
+    expect(find.text('Items overview'), findsNothing);
     expect(find.text('Timetable'), findsOneWidget);
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();

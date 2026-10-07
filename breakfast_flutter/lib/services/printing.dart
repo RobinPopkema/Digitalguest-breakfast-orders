@@ -39,7 +39,7 @@ class Printing {
 @media print {#printArea{position:static!important;left:auto;top:auto;width:auto;visibility:visible!important;pointer-events:auto}.browserbar{display:none!important}.printpage{margin:0}body{background:white}}
 </style></head><body><div class="browserbar"><button onclick="window.print()" id="browserPrint" disabled>Preparing…</button></div><div id="printArea" class="print"></div><script type="application/json" id="order-data">$payload</script><script>$renderer\n$layout
 window.addEventListener('afterprint',()=>window.close());
-window.addEventListener('load',async()=>{try{await document.fonts.ready;paginateOrderSlips();paginateTotals();paginateTimetable();document.getElementById('browserPrint').disabled=false;document.getElementById('browserPrint').textContent='Print / Save PDF';requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}catch(error){document.getElementById('browserPrint').textContent='Could not prepare print pages: '+error.message}},{once:true});</script></body></html>''';
+window.addEventListener('load',async()=>{try{await document.fonts.ready;paginateOrderSlips();paginateTimetable();document.getElementById('browserPrint').disabled=false;document.getElementById('browserPrint').textContent='Print / Save PDF';requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}catch(error){document.getElementById('browserPrint').textContent='Could not prepare print pages: '+error.message}},{once:true});</script></body></html>''';
   }
 
   static Future<File> prepare(

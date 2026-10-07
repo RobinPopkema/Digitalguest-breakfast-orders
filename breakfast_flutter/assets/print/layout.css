@@ -38,10 +38,10 @@ summary.btn{cursor:pointer;user-select:none}.exportmenu summary{border-radius:0 
 @media all{.print{font-family:"Segoe UI",Arial,sans-serif;color:#142f43}}
 
 @page slips {size:A4 landscape;margin:0}
-@page overview {size:A4 portrait;margin:0}
 @media all {
  .printpage{page:slips}
- .summarypage,.pivotpage{page:overview;width:210mm;height:297mm}
+ .summarypage,.pivotpage{page:slips;width:297mm;height:210mm;position:relative;overflow:hidden}
+ .pivotpage .timetablecolumn{position:absolute;left:293mm;top:4mm;width:202mm;height:289mm;transform-origin:0 0;transform:rotate(90deg)}
  .totalsgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
  .totalsgrid,.totalscolumn,.timetablecolumn{height:289mm}
  .timetable thead th{white-space:normal;font-size:8pt}
@@ -50,3 +50,5 @@ summary.btn{cursor:pointer;user-select:none}.exportmenu summary{border-radius:0 
  .slip-warning{position:absolute;bottom:2mm;left:2mm;right:2mm;font:bold 7pt/1.2 'Segoe UI',sans-serif;color:#b42318;border-top:1px solid #b42318;padding-top:1mm}
  .line,.summarytable tr,.timetable tr{print-color-adjust:exact;-webkit-print-color-adjust:exact}
 }
+
+@media all{.timetable .item-total{font-weight:700;border-right:2px solid #64748b}.timetable th.item-total,.timetable td.item-total{width:8%}.printorder .line{background:transparent}}

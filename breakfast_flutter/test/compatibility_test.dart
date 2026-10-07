@@ -13,6 +13,42 @@ import 'fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('Repeated merging preserves historical products, nested email keys and unrelated orders', () {
+    final data = fixture();
+    data['orders'] = <Json>[
+      for (var i = 0; i < 4; i++)
+        {
+          'id': 'o$i',
+          'room': '8',
+          'slot': slots.first,
+          'comment': 'same note',
+          'emailSource': {'key': 'k$i'},
+          'lines': <Json>[
+            {
+              'itemId': i == 2 ? 'other' : 'removed',
+              'name': 'Same name',
+              'categoryId': 'gone',
+              'qty': i + 1,
+            },
+          ],
+        },
+    ];
+    mergeSelectedOrders(data, {'o0', 'o1'}, 'o0');
+    mergeSelectedOrders(data, {'o0', 'o2'}, 'o2');
+    final merged = findById(data['orders'], 'o2')!;
+    expect(rows(merged['lines']).map((l) => l['qty']), [3, 3]);
+    expect(merged['comment'], 'same note');
+    expect(orderHasEmailKey(merged, 'k1'), isTrue);
+    expect(orderHasEmailKey(merged, 'missing'), isFalse);
+    expect(findById(data['orders'], 'o3')!['lines'][0]['qty'], 4);
+    final before = clone(data);
+    expect(
+      () => mergeSelectedOrders(data, {'o2', 'missing'}, 'o2'),
+      throwsStateError,
+    );
+    expect(data, before);
+    expect(validateData(clone(data))['orders'].length, 2);
+  });
   test('Orders and print payload follow current menu order without guest details or source mutation', () async {
     final data = fixture();
     data['categories'].insert(0, {'id': 'other', 'name': 'Other', 'color': 7});
@@ -312,10 +348,7 @@ void main() {
       },
     ];
     final html = await Printing.document(data, 'orders', {});
-    expect(
-      html,
-      contains('paginateOrderSlips();paginateTotals();paginateTimetable();'),
-    );
+    expect(html, contains('paginateOrderSlips();paginateTimetable();'));
     expect(html, contains('width:297mm;height:210mm;padding:4mm'));
     expect(html, contains('window.print()'));
     expect(html, contains(r'\u003c/script\u003e'));
