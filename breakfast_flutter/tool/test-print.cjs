@@ -34,4 +34,6 @@ const slips = render('orders');
 assert.ok(!slips.includes('class="line" style='));
 assert.ok(!slips.includes('class="timetable"'));
 assert.ok(slips.includes('× 3'));
+assert.ok(slips.includes('<h3>1</h3>'));
+assert.ok(!slips.includes('<h3>Cabin '));
 console.log('Combined timetable totals, blank cells, category grouping, legacy totals mode and unshaded slips passed.');

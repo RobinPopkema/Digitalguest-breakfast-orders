@@ -354,6 +354,56 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Category accordion retains edits and rejects cross-category item drops',
+    (tester) async {
+      app.edit((data) {
+        data['categories'].add({'id': 'drinks', 'name': 'Drinks', 'color': 7});
+        data['items'].add({
+          'id': 'coffee',
+          'name': 'Coffee',
+          'categoryId': 'drinks',
+        });
+      });
+      await open(tester);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
+      expect(find.byKey(const ValueKey('edit-coffee')), findsNothing);
+      final drop = tester.widget<DragTarget<String>>(
+        find.byKey(const ValueKey('drop-bakery-end')),
+      );
+      final foreign = DragTargetDetails<String>(
+        data: 'coffee',
+        offset: Offset.zero,
+      );
+      expect(drop.onWillAcceptWithDetails!(foreign), isFalse);
+      drop.onAcceptWithDetails!(foreign);
+      await tester.enterText(
+        find.byKey(const ValueKey('edit-croissant')),
+        'Fresh croissant',
+      );
+      await tester.tap(find.byKey(const ValueKey('toggle-category-drinks')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
+      expect(find.byKey(const ValueKey('edit-coffee')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('toggle-category-drinks')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-coffee')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('toggle-category-bakery')));
+      await tester.pumpAndSettle();
+      expect(find.text('Fresh croissant'), findsOneWidget);
+      await tester.tap(find.text('Save all changes'));
+      await tester.pumpAndSettle();
+      expect(findById(app.data['items'], 'coffee')!['categoryId'], 'drinks');
+      expect(
+        findById(app.data['items'], 'croissant')!['name'],
+        'Fresh croissant',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Menu sections and item drag order persist after saving', (
     tester,
   ) async {

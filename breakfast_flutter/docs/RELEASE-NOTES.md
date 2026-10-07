@@ -1,8 +1,7 @@
-Breakfast Orders 2.0.31
+Breakfast Orders 2.0.32
 
-- Merge two or more selected orders. Choose the order whose cabin and delivery time should be kept; quantities are added and comments combined. Original guest details and emails remain accessible, and duplicate email detection includes merged orders.
-- Item totals are now a Total column between the item name and delivery times in Timetable. The separate Items overview printout is removed.
-- The overview is rotated 90 degrees on landscape A4 so Edge can print every page with the same orientation.
-- Delivery-slip item rows no longer have background shading. Category pills and timetable striping remain.
+- Delivery slips display the accommodation name without a Cabin prefix.
+- Menu categories can be expanded or collapsed. Opening a category closes the others; entered edits are retained. Adding an item opens its category.
+- Menu items can only be dragged within their current category. Categories still move with their children, and the category selector remains available for deliberate reassignment.
 
-From 2.0.30, use Settings > About & licenses > Check for updates, then Update available. Earlier versions need manual ZIP replacement to obtain the repaired updater. Saved data remains compatible.
+Use Settings > About & licenses > Check for updates to install this release from 2.0.30 or later.

@@ -29,10 +29,12 @@ class _ManageDialogState extends State<ManageDialog> {
   int newColor = 0;
   String cabinFilter = '';
   String? draggingItem;
+  String? expandedCategory;
   @override
   void initState() {
     super.initState();
     draft = clone(widget.app.data);
+    expandedCategory = rows(draft['categories']).firstOrNull?['id'];
     section = widget.initialSection;
     newColor = nextColor();
     for (final key in ['categories', 'items', 'safeCabins']) {
@@ -103,6 +105,8 @@ class _ManageDialogState extends State<ManageDialog> {
         if (key == 'items') 'categoryId': category,
       });
       if (key == 'categories') newColor = nextColor(previous: newColor);
+      if (key == 'categories') expandedCategory = id;
+      if (key == 'items') expandedCategory = category;
     });
     additions[key]!.clear();
     additionFocus[key]!.requestFocus();
@@ -271,6 +275,7 @@ class _ManageDialogState extends State<ManageDialog> {
                   newCategory = v;
                 } else {
                   entry['categoryId'] = v;
+                  expandedCategory = v;
                 }
               }),
             ),
@@ -310,6 +315,29 @@ class _ManageDialogState extends State<ManageDialog> {
               ),
             ),
           ),
+          if (key == 'categories')
+            SizedBox(
+              width: 44,
+              child: isNew
+                  ? null
+                  : IconButton(
+                      key: ValueKey('toggle-category-${entry['id']}'),
+                      tooltip:
+                          '${expandedCategory == entry['id'] ? 'Collapse' : 'Expand'} category',
+                      onPressed: draggingItem != null
+                          ? null
+                          : () => setState(() {
+                              expandedCategory = expandedCategory == entry['id']
+                                  ? null
+                                  : entry['id'];
+                            }),
+                      icon: Icon(
+                        expandedCategory == entry['id']
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                      ),
+                    ),
+            ),
           if (key == 'items') ...[
             SizedBox(
               width: 44,
@@ -410,9 +438,12 @@ class _ManageDialogState extends State<ManageDialog> {
     setState(() {
       final all = rows(draft['items']);
       final item = findById(all, id);
-      if (item == null) return;
+      if (item == null || item['categoryId'] != categoryId) return;
+      if (beforeId != null &&
+          findById(all, beforeId)?['categoryId'] != categoryId) {
+        return;
+      }
       all.remove(item);
-      item['categoryId'] = categoryId;
       final before = all.indexWhere((i) => i['id'] == beforeId);
       final last = all.lastIndexWhere((i) => i['categoryId'] == categoryId);
       all.insert(
@@ -429,7 +460,9 @@ class _ManageDialogState extends State<ManageDialog> {
   Widget itemDropZone(String categoryId, String? beforeId, Widget child) =>
       DragTarget<String>(
         key: ValueKey('drop-$categoryId-${beforeId ?? 'end'}'),
-        onWillAcceptWithDetails: (details) => details.data != beforeId,
+        onWillAcceptWithDetails: (details) =>
+            details.data != beforeId &&
+            findById(draft['items'], details.data)?['categoryId'] == categoryId,
         onAcceptWithDetails: (details) =>
             moveItem(details.data, categoryId, beforeId),
         builder: (context, candidates, rejected) => Column(
@@ -470,7 +503,7 @@ class _ManageDialogState extends State<ManageDialog> {
       ),
     ),
     child: const Tooltip(
-      message: 'Drag to reorder item',
+      message: 'Drag to reorder within this category',
       child: MouseRegion(
         cursor: SystemMouseCursors.grab,
         child: SizedBox(
@@ -526,7 +559,7 @@ class _ManageDialogState extends State<ManageDialog> {
           const Padding(
             padding: EdgeInsets.only(bottom: 12),
             child: Text(
-              'Drag categories or items to reorder. Use the eye buttons to enable or disable items.',
+              'Expand a category to edit its items. Drag items within their category to reorder.',
             ),
           ),
         ],
@@ -534,8 +567,13 @@ class _ManageDialogState extends State<ManageDialog> {
       footer: Column(
         children: [
           for (final id in missing) ...[
-            const Text('Unassigned category'),
-            itemsIn(id),
+            TextButton(
+              onPressed: () => setState(
+                () => expandedCategory = expandedCategory == id ? null : id,
+              ),
+              child: const Text('Unassigned category'),
+            ),
+            if (expandedCategory == id) itemsIn(id),
           ],
         ],
       ),
@@ -575,7 +613,8 @@ class _ManageDialogState extends State<ManageDialog> {
                     ),
                   ),
                 ),
-                itemsIn(categories[i]['id']),
+                if (expandedCategory == categories[i]['id'])
+                  itemsIn(categories[i]['id']),
               ],
             ),
           ),
