@@ -46,7 +46,7 @@ The release workflow tests and builds Windows, validates the updater helper, and
 publishes a release for each new version. Bump both pubspec.yaml and appVersion in
 lib/services/updates.dart and update docs/RELEASE-NOTES.md before publishing.
 
-70 automated Flutter tests plus Windows updater process-survival, folder replacement, installation,
+72 automated Flutter tests plus Windows updater process-survival, folder replacement, installation,
 checksum rejection, archive traversal rejection and rollback checks. Live mailbox credentials and
 physical printers require validation in your own environment.
 

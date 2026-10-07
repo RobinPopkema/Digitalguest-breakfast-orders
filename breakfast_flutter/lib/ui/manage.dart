@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 import '../controller.dart';
 import '../model.dart';
@@ -538,6 +539,42 @@ class _ManageDialogState extends State<ManageDialog> {
     ),
   );
 
+  void finishCategoryDrag() {
+    if (!mounted || draggingCategory == null) return;
+    setState(() {
+      expandedCategory = draggingCategory;
+      draggingCategory = null;
+    });
+  }
+
+  Widget categoryProxy(Widget child, int index, Animation<double> animation) {
+    final category = findById(draft['categories'], draggingCategory)!;
+    return _CategoryDragProxy(
+      onRemoved: finishCategoryDrag,
+      child: Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          key: const ValueKey('category-drag-preview'),
+          height: 60,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              const Icon(Icons.drag_indicator),
+              const SizedBox(width: 12),
+              Flexible(
+                child: CategoryBadge({
+                  ...category,
+                  'name': names[category['id']]!.text,
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget groupedItems() {
     final categories = rows(draft['categories']);
     final categoryIds = categories.map((category) => category['id']).toSet();
@@ -604,30 +641,7 @@ class _ManageDialogState extends State<ManageDialog> {
         draggingCategory = categories[index]['id'];
         expandedCategory = null;
       }),
-      onReorderEnd: (_) => setState(() {
-        expandedCategory = draggingCategory;
-        draggingCategory = null;
-      }),
-      proxyDecorator: (child, index, animation) => Material(
-        elevation: 6,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: [
-              const SizedBox(width: 16),
-              const Icon(Icons.drag_indicator),
-              const SizedBox(width: 12),
-              Flexible(
-                child: CategoryBadge({
-                  ...categories[index],
-                  'name': names[categories[index]['id']]!.text,
-                }),
-              ),
-            ],
-          ),
-        ),
-      ),
+      proxyDecorator: categoryProxy,
       onReorderItem: (oldIndex, newIndex) => setState(() {
         categories.insert(newIndex, categories.removeAt(oldIndex));
       }),
@@ -657,11 +671,18 @@ class _ManageDialogState extends State<ManageDialog> {
                       }
                     },
                     onPointerCancel: (_) {
-                      if (draggingCategory == null) {
-                        setState(() => expandedCategory = categories[i]['id']);
-                      }
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        if (draggingCategory != null) {
+                          finishCategoryDrag();
+                        } else {
+                          setState(
+                            () => expandedCategory = categories[i]['id'],
+                          );
+                        }
+                      });
                     },
-                    child: ReorderableDragStartListener(
+                    child: _CategoryDragStartListener(
                       key: ValueKey('drag-category-${categories[i]['id']}'),
                       index: i,
                       child: const Tooltip(
@@ -1142,4 +1163,96 @@ class _CabinNameDialogState extends State<_CabinNameDialog> {
       FilledButton(onPressed: submit, child: const Text('Save cabin')),
     ],
   );
+}
+
+// Reopening changes row heights, so wait until Flutter has removed the drag
+// overlay and its placeholder, including no-op drops and cancelled drags.
+class _CategoryDragProxy extends StatefulWidget {
+  const _CategoryDragProxy({required this.child, required this.onRemoved});
+  final Widget child;
+  final VoidCallback onRemoved;
+  @override
+  State<_CategoryDragProxy> createState() => _CategoryDragProxyState();
+}
+
+class _CategoryDragProxyState extends State<_CategoryDragProxy> {
+  @override
+  Widget build(BuildContext context) => widget.child;
+
+  @override
+  void dispose() {
+    final onRemoved = widget.onRemoved;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onRemoved());
+    super.dispose();
+  }
+}
+
+class _CategoryDragStartListener extends StatelessWidget {
+  const _CategoryDragStartListener({
+    super.key,
+    required this.index,
+    required this.child,
+  });
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: (event) {
+      final localAnchor = event.localPosition;
+      SliverReorderableList.of(context).startItemDragReorder(
+        index: index,
+        event: event,
+        recognizer: _CollapsedCategoryDragRecognizer(
+          () => (context.findRenderObject()! as RenderBox).localToGlobal(
+            localAnchor,
+          ),
+        )..gestureSettings = MediaQuery.maybeGestureSettingsOf(context),
+      );
+    },
+    child: child,
+  );
+}
+
+class _CollapsedCategoryDragRecognizer
+    extends ImmediateMultiDragGestureRecognizer {
+  _CollapsedCategoryDragRecognizer(this.anchor) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _layoutReady = true;
+      if (!_disposed && _pendingPointer != null) _accept(_pendingPointer!);
+    });
+  }
+  final Offset Function() anchor;
+  bool _disposed = false, _layoutReady = false;
+  int? _pendingPointer;
+
+  @override
+  void acceptGesture(int pointer) {
+    if (_layoutReady) {
+      _accept(pointer);
+    } else {
+      _pendingPointer = pointer;
+    }
+  }
+
+  void _accept(int pointer) {
+    // Measure after collapse, keeping the preview at the actual pointer even
+    // when closing an earlier category moves this handle upwards.
+    final start = onStart;
+    onStart = (position) {
+      final origin = anchor();
+      final drag = start?.call(origin);
+      drag?.update(
+        DragUpdateDetails(delta: position - origin, globalPosition: position),
+      );
+      return drag;
+    };
+    super.acceptGesture(pointer);
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,16 +41,101 @@ void main() {
       expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
       final gesture = await tester.startGesture(
         tester.getCenter(find.byKey(const ValueKey('drag-category-bakery'))),
+        kind: PointerDeviceKind.mouse,
       );
-      await tester.pump();
+      // Move before a frame: the old implementation captured the expanded height.
       await gesture.moveBy(const Offset(0, 25));
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
       expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
       expect(find.byKey(const ValueKey('edit-butter')), findsNothing);
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('category-drag-preview')))
+            .height,
+        lessThanOrEqualTo(61),
+      );
       await gesture.up();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Expanded category moves as a compact row and reopens at its new position',
+    (tester) async {
+      app.edit((data) {
+        data['categories'].add({'id': 'drinks', 'name': 'Drinks', 'color': 2});
+        data['items'].add({
+          'id': 'coffee',
+          'name': 'Coffee',
+          'categoryId': 'drinks',
+        });
+      });
+      await open(tester);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(const ValueKey('drag-category-bakery'))),
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.moveBy(const Offset(0, 25));
+      await tester.pump();
+      await tester.pump();
+      final target =
+          tester.getCenter(find.byKey(const ValueKey('drag-category-drinks'))) +
+          const Offset(0, 90);
+      await gesture.moveTo(target);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('category-drag-preview')))
+            .height,
+        lessThanOrEqualTo(61),
+      );
+      expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
+      await tester.tap(find.text('Save all changes'));
+      await tester.pumpAndSettle();
+      expect(rows(app.data['categories']).map((c) => c['id']), [
+        'drinks',
+        'bakery',
+      ]);
+      expect(findById(app.data['items'], 'croissant')!['categoryId'], 'bakery');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Quick handle clicks and cancelled mouse drags restore the category',
+    (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      for (final startDrag in [false, true]) {
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byKey(const ValueKey('drag-category-bakery'))),
+          kind: PointerDeviceKind.mouse,
+        );
+        if (startDrag) {
+          await gesture.moveBy(const Offset(0, 25));
+          await tester.pump();
+          await tester.pump();
+          await gesture.cancel();
+        } else {
+          await gesture.up();
+        }
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
     },
   );
 
@@ -552,12 +638,17 @@ void main() {
     expect(find.byKey(const ValueKey('edit-butter')), findsNothing);
     final target =
         tester.getCenter(find.byKey(const ValueKey('drag-category-bakery'))) +
-        const Offset(0, 20);
+        const Offset(0, -20);
     for (var step = 1; step <= 15; step++) {
       await categoryDrag.moveTo(Offset.lerp(from, target, step / 15)!);
       await tester.pump(const Duration(milliseconds: 30));
     }
     await tester.pump(const Duration(milliseconds: 400));
+    final preview = tester.getRect(
+      find.byKey(const ValueKey('category-drag-preview')),
+    );
+    expect(preview.top, lessThanOrEqualTo(target.dy));
+    expect(preview.bottom, greaterThanOrEqualTo(target.dy));
     await categoryDrag.up();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('edit-coffee')), findsOneWidget);
