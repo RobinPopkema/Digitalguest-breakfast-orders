@@ -1,7 +1,8 @@
-Breakfast Orders 2.0.32
+# Breakfast Orders 2.0.33
 
-- Delivery slips display the accommodation name without a Cabin prefix.
-- Menu categories can be expanded or collapsed. Opening a category closes the others; entered edits are retained. Adding an item opens its category.
-- Menu items can only be dragged within their current category. Categories still move with their children, and the category selector remains available for deliberate reassignment.
-
-Use Settings > About & licenses > Check for updates to install this release from 2.0.30 or later.
+- Added spacing between adjacent order, review and menu action buttons.
+- Category dragging collapses every category, including the dragged category, and reopens it on release.
+- Added Show/Hide category controls. Hidden categories cannot be added to new orders or matched automatically from email; individual item availability and existing orders are retained.
+- Reorganized About & licenses with app information, update controls, data location and licenses.
+- Update checks run once automatically at startup. An available update opens About & licenses with a prominent notification after any open order dialog is closed.
+- Kept manual update checks and confirmed installation; removed the update button from the top toolbar and the four-hour background check.

@@ -103,6 +103,34 @@ void main() {
     service.dispose();
     dir.deleteSync(recursive: true);
   });
+  test('Hidden categories block automatic and explicit imports without losing item flags', () async {
+    await service.saveSettings(input);
+    await service.check();
+    final entry = service.queue.first;
+    data = clone(data);
+    final category = findById(data['categories'], 'bakery')!;
+    category['available'] = false;
+    expect(service.matches(entry), ['', '']);
+    expect(service.quickReady(entry), isFalse);
+    expect(
+      () => service.accept({
+        'id': entry['id'],
+        'safeCabinId': '8',
+        'confirmed': true,
+        'slot': entry['slot'],
+        'lines': [
+          {'sourceIndex': 0, 'itemId': 'croissant', 'qty': 2},
+          {'sourceIndex': 1, 'itemId': 'butter', 'qty': 1},
+        ],
+      }),
+      throwsStateError,
+    );
+    expect(service.queue.length, 1);
+    findById(data['items'], 'butter')!['available'] = false;
+    category['available'] = true;
+    expect(service.matches(entry), ['croissant', '']);
+  });
+
   test('Indexed matching retains ambiguity and unavailable alias rules', () {
     data = clone(data);
     data['items'].add({

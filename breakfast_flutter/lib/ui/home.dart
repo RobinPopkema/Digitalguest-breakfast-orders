@@ -18,7 +18,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   final selected = <String>{}, cabins = <String, String>{};
   String? expanded, expandedEmail;
   bool printing = false;
@@ -28,6 +28,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     app.addListener(update);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      showStartupUpdate();
       if (app.store.migrationNotice != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -40,7 +41,34 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    appRouteObserver.unsubscribe(this);
+    final route = ModalRoute.of(context);
+    if (route != null) appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void didPopNext() => showStartupUpdate();
+
+  void showStartupUpdate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          !app.updates.startupNoticePending ||
+          ModalRoute.of(context)?.isCurrent != true) {
+        return;
+      }
+      app.updates.startupNoticePending = false;
+      showDialog(
+        context: context,
+        builder: (_) => ManageDialog(app, initialSection: 4),
+      );
+    });
+  }
+
   void update() {
+    showStartupUpdate();
     if (mounted) {
       setState(() {
         selected.removeWhere((id) => findById(app.data['orders'], id) == null);
@@ -50,6 +78,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    appRouteObserver.unsubscribe(this);
     app.removeListener(update);
     super.dispose();
   }
@@ -60,60 +89,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (mounted) showError(context, e);
     }
-  }
-
-  Future<void> installUpdate() async {
-    final release = app.updates.available;
-    if (release == null || app.updates.installing) return;
-    if (!await confirm(
-      context,
-      'Update to ${release['version']}?',
-      'The app will download the update and restart. Your orders and settings are kept.\n\n${release['notes']}',
-      action: 'Update and restart',
-    )) {
-      return;
-    }
-    if (!mounted) return;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: const Text('Installing update'),
-          content: ListenableBuilder(
-            listenable: app.updates,
-            builder: (_, _) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LinearProgressIndicator(
-                  value: app.updates.progress > 0 && app.updates.progress < 1
-                      ? app.updates.progress
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  app.updates.progress < 1
-                      ? 'Downloading update…'
-                      : 'Verifying and preparing restart…',
-                ),
-                const SizedBox(height: 8),
-                const Text('Your saved orders and settings will be kept.'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    Object? failure;
-    try {
-      await app.updates.install(app.store.directory.path);
-    } catch (error) {
-      failure = error;
-    } finally {
-      if (mounted) Navigator.of(context).pop();
-    }
-    if (failure != null && mounted) showError(context, failure);
   }
 
   void settings() => showDialog(
@@ -381,22 +356,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      if (app.updates.available != null)
-                        FilledButton.icon(
-                          onPressed: app.updates.installing
-                              ? null
-                              : installUpdate,
-                          icon: const Icon(Icons.system_update_alt),
-                          label: Text(
-                            app.updates.installing
-                                ? app.updates.progress >= 1
-                                      ? 'Preparing update…'
-                                      : 'Downloading ${(app.updates.progress * 100).round()}%'
-                                : 'Update available',
-                          ),
-                        ),
                       updateControl(),
                       printControl(),
                       settingsControl(),
@@ -687,6 +649,7 @@ class _HomePageState extends State<HomePage> {
                   onPressed: () => edit(order),
                   icon: const Icon(Icons.edit_outlined, size: 20),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
                   tooltip:
                       '${open ? 'Collapse' : 'Expand'} order ${order['room']}',
@@ -1065,6 +1028,7 @@ class _HomePageState extends State<HomePage> {
                     size: 20,
                   ),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
                   tooltip:
                       '${open ? 'Collapse' : 'Expand'} pending order ${entry['room']}',

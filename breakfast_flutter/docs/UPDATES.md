@@ -1,12 +1,13 @@
 # Updates and releases
 
 Public release source: https://github.com/RobinPopkema/Digitalguest-breakfast-orders
-The app checks the latest non-draft, non-prerelease release on startup and every four
-hours. About & licenses also has a manual check. Only a higher numeric x.y.z version
+The app checks the latest non-draft, non-prerelease release once at startup. About & licenses also has a manual check. Only a higher numeric x.y.z version
 with a Windows ZIP and a GitHub SHA-256 digest is offered. API rate limits and offline
 failures leave the app usable; details appear on the About page.
 
-Click Update available in the top bar, review the release notes and confirm.
+Settings → About & licenses opens when the startup check finds an update.
+Click Update and restart there, review the release notes and confirm.
+Open order dialogs are allowed to finish first. Unsaved menu edits are saved after confirmation.
 The helper verifies the hash and archive paths, performs a native startup probe,
 stages files beside the installation, then waits for the existing app to exit.
 Order data and protected credentials remain in the separate profile directory.

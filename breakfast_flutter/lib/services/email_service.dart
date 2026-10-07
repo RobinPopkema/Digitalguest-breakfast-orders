@@ -306,10 +306,12 @@ class EmailService extends ChangeNotifier {
       final name = normalize(line['name']);
       final aliased = byId[imports['aliases'][name]];
       if (aliased != null) {
-        return itemAvailable(aliased) ? aliased['id'] as String : '';
+        return itemAvailable(aliased, data) ? aliased['id'] as String : '';
       }
       final found = byName[name];
-      return found != null && found.length == 1 && itemAvailable(found.single)
+      return found != null &&
+              found.length == 1 &&
+              itemAvailable(found.single, data)
           ? found.single['id'] as String
           : '';
     }).toList();
@@ -383,7 +385,7 @@ class EmailService extends ChangeNotifier {
       final item = findById(data['items'], selected['itemId']),
           category = findById(data['categories'], item?['categoryId']);
       final qty = selected['qty'];
-      if (item != null && !itemAvailable(item)) {
+      if (item != null && !itemAvailable(item, data)) {
         throw StateError(
           'This item is unavailable. Select an available replacement.',
         );
@@ -408,7 +410,7 @@ class EmailService extends ChangeNotifier {
         final sourceName = normalize(entry['lines'][index]['name']);
         final temporaryReplacement = rows(data['items']).any(
           (candidate) =>
-              !itemAvailable(candidate) &&
+              !itemAvailable(candidate, data) &&
               (normalize(candidate['name']) == sourceName ||
                   candidate['id'] == aliases[sourceName]),
         );

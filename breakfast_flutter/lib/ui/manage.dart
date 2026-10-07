@@ -4,6 +4,7 @@ import '../controller.dart';
 import '../model.dart';
 import '../services/updates.dart';
 import 'common.dart';
+import 'app_update.dart';
 import 'email_dialogs.dart';
 
 class ManageDialog extends StatefulWidget {
@@ -30,12 +31,14 @@ class _ManageDialogState extends State<ManageDialog> {
   String cabinFilter = '';
   String? draggingItem;
   String? expandedCategory;
+  String? draggingCategory;
   @override
   void initState() {
     super.initState();
     draft = clone(widget.app.data);
     expandedCategory = rows(draft['categories']).firstOrNull?['id'];
     section = widget.initialSection;
+    widget.app.updates.addListener(startupUpdate);
     newColor = nextColor();
     for (final key in ['categories', 'items', 'safeCabins']) {
       for (final e in rows(draft[key])) {
@@ -44,8 +47,19 @@ class _ManageDialogState extends State<ManageDialog> {
     }
   }
 
+  void startupUpdate() {
+    if (!mounted ||
+        !widget.app.updates.startupNoticePending ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    widget.app.updates.startupNoticePending = false;
+    setState(() => section = 4);
+  }
+
   @override
   void dispose() {
+    widget.app.updates.removeListener(startupUpdate);
     for (final c in additions.values) {
       c.dispose();
     }
@@ -315,6 +329,7 @@ class _ManageDialogState extends State<ManageDialog> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           if (key == 'categories')
             SizedBox(
               width: 44,
@@ -338,13 +353,18 @@ class _ManageDialogState extends State<ManageDialog> {
                       ),
                     ),
             ),
-          if (key == 'items') ...[
+          if (key == 'categories') const SizedBox(width: 8),
+          if (key == 'items' || key == 'categories') ...[
             SizedBox(
               width: 44,
               child: isNew
                   ? null
                   : Tooltip(
-                      message: itemAvailable(entry)
+                      message: key == 'categories'
+                          ? (itemAvailable(entry)
+                                ? 'Hide category'
+                                : 'Show category')
+                          : itemAvailable(entry)
                           ? 'Available — turn off to pause'
                           : 'Unavailable — turn on to restore',
                       child: Semantics(
@@ -365,6 +385,7 @@ class _ManageDialogState extends State<ManageDialog> {
                     ),
             ),
           ],
+          const SizedBox(width: 8),
           SizedBox(
             width: 44,
             child: isNew
@@ -402,7 +423,7 @@ class _ManageDialogState extends State<ManageDialog> {
     });
   }
 
-  void save() {
+  bool save({bool close = true}) {
     try {
       for (final key in ['categories', 'items', 'safeCabins']) {
         final seen = <String>{};
@@ -427,9 +448,11 @@ class _ManageDialogState extends State<ManageDialog> {
         }
         updateSnapshots(data);
       });
-      Navigator.pop(context);
+      if (close) Navigator.pop(context);
+      return true;
     } catch (e) {
       showError(context, e);
+      return false;
     }
   }
 
@@ -577,6 +600,34 @@ class _ManageDialogState extends State<ManageDialog> {
           ],
         ],
       ),
+      onReorderStart: (index) => setState(() {
+        draggingCategory = categories[index]['id'];
+        expandedCategory = null;
+      }),
+      onReorderEnd: (_) => setState(() {
+        expandedCategory = draggingCategory;
+        draggingCategory = null;
+      }),
+      proxyDecorator: (child, index, animation) => Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              const Icon(Icons.drag_indicator),
+              const SizedBox(width: 12),
+              Flexible(
+                child: CategoryBadge({
+                  ...categories[index],
+                  'name': names[categories[index]['id']]!.text,
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
       onReorderItem: (oldIndex, newIndex) => setState(() {
         categories.insert(newIndex, categories.removeAt(oldIndex));
       }),
@@ -597,17 +648,31 @@ class _ManageDialogState extends State<ManageDialog> {
                 entryRow(
                   'categories',
                   entry: categories[i],
-                  leading: ReorderableDragStartListener(
-                    key: ValueKey('drag-category-${categories[i]['id']}'),
-                    index: i,
-                    child: const Tooltip(
-                      message: 'Drag category and all its items',
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: SizedBox(
-                          width: 32,
-                          height: 44,
-                          child: Icon(Icons.drag_indicator, size: 20),
+                  leading: Listener(
+                    onPointerDown: (_) =>
+                        setState(() => expandedCategory = null),
+                    onPointerUp: (_) {
+                      if (draggingCategory == null) {
+                        setState(() => expandedCategory = categories[i]['id']);
+                      }
+                    },
+                    onPointerCancel: (_) {
+                      if (draggingCategory == null) {
+                        setState(() => expandedCategory = categories[i]['id']);
+                      }
+                    },
+                    child: ReorderableDragStartListener(
+                      key: ValueKey('drag-category-${categories[i]['id']}'),
+                      index: i,
+                      child: const Tooltip(
+                        message: 'Drag category and all its items',
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: SizedBox(
+                            width: 32,
+                            height: 44,
+                            child: Icon(Icons.drag_indicator, size: 20),
+                          ),
                         ),
                       ),
                     ),
@@ -695,6 +760,7 @@ class _ManageDialogState extends State<ManageDialog> {
                     onPressed: () => editCabin(cabin),
                     icon: const Icon(Icons.edit_outlined, size: 18),
                   ),
+                  const SizedBox(width: 8),
                   IconButton(
                     tooltip: 'Delete cabin ${names[cabin['id']]!.text}',
                     onPressed: () => remove('safeCabins', cabin),
@@ -764,49 +830,120 @@ class _ManageDialogState extends State<ManageDialog> {
   Widget aboutPage() => ListView(
     padding: const EdgeInsets.all(24),
     children: [
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Image.asset('assets/icon-256.png', width: 64),
+      Row(
+        children: [
+          Image.asset('assets/icon-256.png', width: 56),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Breakfast Orders',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                Text('Version $appVersion'),
+              ],
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 16),
-      Text('Breakfast Orders', style: Theme.of(context).textTheme.titleLarge),
-      const Text('$appVersion · Expressive preview'),
+      const SizedBox(height: 24),
       ListenableBuilder(
         listenable: widget.app.updates,
-        builder: (context, _) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: widget.app.updates.checking
-                  ? null
-                  : () async {
-                      await widget.app.updates.check();
-                      if (mounted) setState(() {});
-                    },
-              icon: const Icon(Icons.system_update_alt),
-              label: Text(
-                widget.app.updates.checking ? 'Checking…' : 'Check for updates',
+        builder: (context, _) {
+          final updates = widget.app.updates;
+          final release = updates.available;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (release != null)
+                Card.filled(
+                  key: const ValueKey('update-notice'),
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.system_update_alt, size: 32),
+                        const SizedBox(height: 12),
+                        Text(
+                          'A new version is available',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Version ${release['version']} is ready to install.',
+                        ),
+                        if ('${release['notes'] ?? ''}'.trim().isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text('${release['notes']}'),
+                        ],
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: updates.installing
+                              ? null
+                              : () => installAppUpdate(
+                                  context,
+                                  widget.app,
+                                  beforeInstall: () => save(close: false),
+                                ),
+                          icon: const Icon(Icons.system_update_alt),
+                          label: const Text('Update and restart'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Text(
+                updates.error ??
+                    (!updates.configured
+                        ? 'Update repository is not configured in this build.'
+                        : updates.checking
+                        ? 'Checking for updates…'
+                        : release == null
+                        ? 'No newer release found.'
+                        : 'Your saved orders and settings will be kept.'),
               ),
-            ),
-            Text(
-              !widget.app.updates.configured
-                  ? 'Update repository is not configured in this build.'
-                  : widget.app.updates.error ??
-                        (widget.app.updates.available != null
-                            ? 'An update is available in the top menu.'
-                            : 'No newer release found.'),
-            ),
-          ],
-        ),
+              const SizedBox(height: 8),
+              const Text(
+                'Updates are checked once at startup. You can also check manually.',
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed:
+                    updates.checking ||
+                        updates.installing ||
+                        !updates.configured
+                    ? null
+                    : updates.check,
+                icon: const Icon(Icons.refresh),
+                label: Text(
+                  updates.checking ? 'Checking…' : 'Check for updates',
+                ),
+              ),
+            ],
+          );
+        },
       ),
+      const SizedBox(height: 24),
+      const Divider(),
       const SizedBox(height: 16),
+      Text('Your data', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
       const Text(
         'Compatible with Breakfast Orders 1.22.2 data and print layouts.',
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 8),
       SelectableText('Data folder: ${widget.app.store.directory.path}'),
-      const SizedBox(height: 20),
+      const SizedBox(height: 24),
+      Text('Licenses', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
+      const Text('Third-party software and open-source acknowledgements.'),
+      const SizedBox(height: 12),
       Align(
         alignment: Alignment.centerLeft,
         child: OutlinedButton(
@@ -841,7 +978,10 @@ class _ManageDialogState extends State<ManageDialog> {
       title: 'Settings',
       width: settingsContentWidth,
       headerActions: [
-        FilledButton(onPressed: save, child: const Text('Save all changes')),
+        FilledButton(
+          onPressed: () => save(),
+          child: const Text('Save all changes'),
+        ),
       ],
       body: SizedBox(
         height: 560,

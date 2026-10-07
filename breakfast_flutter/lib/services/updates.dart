@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 import '../model.dart';
 import 'update_helper.dart';
 
-const appVersion = '2.0.32';
+const appVersion = '2.0.33';
 const updateRepository = String.fromEnvironment(
   'UPDATE_REPOSITORY',
   defaultValue: 'RobinPopkema/Digitalguest-breakfast-orders',
@@ -67,7 +67,8 @@ class Updates extends ChangeNotifier {
   final String repository;
   final HttpClient _client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 20);
-  Timer? _timer;
+  bool _started = false;
+  bool startupNoticePending = false;
   bool _disposed = false, checking = false, installing = false;
   Json? available;
   String? error;
@@ -78,13 +79,15 @@ class Updates extends ChangeNotifier {
   }
 
   void start() {
-    if (!configured) return;
-    unawaited(check());
-    _timer?.cancel();
-    _timer = Timer.periodic(
-      const Duration(hours: 4),
-      (_) => unawaited(check()),
-    );
+    if (_started || !configured) return;
+    _started = true;
+    unawaited(_checkAtStartup());
+  }
+
+  Future<void> _checkAtStartup() async {
+    await check();
+    startupNoticePending = available != null;
+    changed();
   }
 
   Future<HttpClientResponse> request(Uri uri, {int redirects = 0}) async {
@@ -249,7 +252,6 @@ class Updates extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _timer?.cancel();
     _client.close(force: true);
     super.dispose();
   }

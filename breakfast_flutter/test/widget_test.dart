@@ -32,6 +32,65 @@ void main() {
   }
 
   testWidgets(
+    'Dragging an expanded category collapses its contents and reopens on release',
+    (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(const ValueKey('drag-category-bakery'))),
+      );
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, 25));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
+      expect(find.byKey(const ValueKey('edit-butter')), findsNothing);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-croissant')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Category visibility preserves item choices and hides new-order entries',
+    (tester) async {
+      findById(app.data['items'], 'butter')!['available'] = false;
+      await open(tester);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('available-bakery')));
+      await tester.tap(find.text('Save all changes'));
+      await tester.pumpAndSettle();
+      expect(findById(app.data['categories'], 'bakery')!['available'], isFalse);
+      expect(
+        itemAvailable(findById(app.data['items'], 'croissant')!, app.data),
+        isFalse,
+      );
+      await tester.tap(find.text('New order').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Croissant'), findsNothing);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('available-bakery')));
+      await tester.tap(find.text('Save all changes'));
+      await tester.pumpAndSettle();
+      expect(
+        itemAvailable(findById(app.data['items'], 'croissant')!, app.data),
+        isTrue,
+      );
+      expect(
+        itemAvailable(findById(app.data['items'], 'butter')!, app.data),
+        isFalse,
+      );
+      expect(app.store.loadOrders()['categories'], app.data['categories']);
+    },
+  );
+
+  testWidgets(
     'Selected orders merge after confirmation and retain original details',
     (tester) async {
       app.edit(
@@ -82,23 +141,47 @@ void main() {
   );
 
   testWidgets(
-    'Update prompt appears only for an available release and waits for confirmation',
+    'Startup update opens About once and installation waits for confirmation',
     (tester) async {
       await open(tester);
       expect(find.text('Update available'), findsNothing);
       app.updates.available = {'version': 'v2.0.27', 'notes': 'Example fixes'};
+      app.updates.startupNoticePending = true;
       app.updates.changed();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Update available'));
+      expect(find.text('Update available'), findsNothing);
+      expect(find.text('A new version is available'), findsOneWidget);
+      await tester.tap(find.text('Update and restart'));
       await tester.pumpAndSettle();
       expect(find.text('Update to v2.0.27?'), findsOneWidget);
-      expect(find.text('Update and restart'), findsOneWidget);
+      expect(find.text('Update and restart'), findsNWidgets(2));
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(app.updates.installing, isFalse);
-      expect(find.text('Update available'), findsOneWidget);
+      expect(find.text('A new version is available'), findsOneWidget);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      app.updates.changed();
+      await tester.pumpAndSettle();
+      expect(find.text('A new version is available'), findsNothing);
     },
   );
+
+  testWidgets('Startup notice waits for order editing to close', (
+    tester,
+  ) async {
+    await open(tester);
+    await tester.tap(find.text('New order').first);
+    await tester.pumpAndSettle();
+    app.updates.available = {'version': 'v9.0.0', 'notes': 'Fixes'};
+    app.updates.startupNoticePending = true;
+    app.updates.changed();
+    await tester.pumpAndSettle();
+    expect(find.text('A new version is available'), findsNothing);
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('A new version is available'), findsOneWidget);
+  });
 
   testWidgets(
     'Pending cabin selector shows guest input and reservation details',
@@ -280,6 +363,11 @@ void main() {
       });
       final before = clone(app.data);
       await open(tester);
+      expect(
+        tester.getTopLeft(find.byTooltip('Expand order 8')).dx -
+            tester.getTopRight(find.byTooltip('Edit order for 8')).dx,
+        greaterThanOrEqualTo(8),
+      );
       await tester.tap(find.byTooltip('Expand order 8'));
       await tester.pumpAndSettle();
       final granola = tester.getTopLeft(find.text('Granola')).dy;
@@ -453,15 +541,15 @@ void main() {
       find.byKey(const ValueKey('drag-category-bakery')),
     );
     await tester.pumpAndSettle();
-    final categoryDrag = await tester.startGesture(
-      tester.getCenter(find.byKey(const ValueKey('drag-category-drinks'))),
-    );
-    await tester.pump();
-    await categoryDrag.moveBy(const Offset(0, -25));
-    await tester.pump(const Duration(milliseconds: 100));
     final from = tester.getCenter(
       find.byKey(const ValueKey('drag-category-drinks')),
     );
+    final categoryDrag = await tester.startGesture(from);
+    await tester.pump();
+    await categoryDrag.moveBy(const Offset(0, -25));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('edit-croissant')), findsNothing);
+    expect(find.byKey(const ValueKey('edit-butter')), findsNothing);
     final target =
         tester.getCenter(find.byKey(const ValueKey('drag-category-bakery'))) +
         const Offset(0, 20);
@@ -472,6 +560,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await categoryDrag.up();
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('edit-coffee')), findsOneWidget);
     await tester.tap(find.text('Save all changes'));
     await tester.pumpAndSettle();
     expect(rows(app.data['categories']).map((c) => c['id']), [

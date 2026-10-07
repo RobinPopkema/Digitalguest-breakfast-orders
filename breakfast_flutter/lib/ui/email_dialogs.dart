@@ -462,7 +462,7 @@ class _EmailReviewState extends State<EmailReview> {
                         labelText: 'Match to menu item',
                       ),
                       items: rows(data['items'])
-                          .where(itemAvailable)
+                          .where((item) => itemAvailable(item, data))
                           .map(
                             (item) => DropdownMenuItem(
                               value: item['id'] as String,

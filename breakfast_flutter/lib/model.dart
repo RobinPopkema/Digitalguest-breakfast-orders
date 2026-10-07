@@ -205,7 +205,11 @@ Json validateData(dynamic value) {
 
 Json? findById(dynamic list, dynamic id) =>
     rows(list).where((e) => e['id'] == id).firstOrNull;
-bool itemAvailable(Json item) => item['available'] != false;
+bool itemAvailable(Json item, [Json? data]) =>
+    item['available'] != false &&
+    (data == null ||
+        findById(data['categories'], item['categoryId'])?['available'] !=
+            false);
 
 Json lineFor(Json item, Json category, int quantity) => {
   'itemId': item['id'],

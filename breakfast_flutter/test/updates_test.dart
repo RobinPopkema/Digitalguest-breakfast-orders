@@ -2,17 +2,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:breakfast_orders/model.dart';
 import 'package:breakfast_orders/services/updates.dart';
 
+class CountingUpdates extends Updates {
+  int checks = 0;
+  @override
+  Future<void> check() async {
+    checks++;
+    available = {'version': 'v9.0.0'};
+  }
+}
+
 void main() {
+  testWidgets('Automatic updates check once at startup, never periodically', (
+    tester,
+  ) async {
+    final updates = CountingUpdates();
+    addTearDown(updates.dispose);
+    updates.start();
+    updates.start();
+    await tester.pump();
+    expect(updates.checks, 1);
+    expect(updates.startupNoticePending, isTrue);
+    updates.startupNoticePending = false;
+    await tester.pump(const Duration(hours: 9));
+    expect(updates.checks, 1);
+    await updates.check();
+    expect(updates.checks, 2);
+    expect(updates.startupNoticePending, isFalse);
+  });
+
   Json release() => {
     'draft': false,
     'prerelease': false,
-    'tag_name': 'v2.0.33',
+    'tag_name': 'v2.0.34',
     'body': 'Fixes',
     'assets': [
       {
-        'name': 'Breakfast-Orders-Flutter-2.0.33-Windows.zip',
+        'name': 'Breakfast-Orders-Flutter-2.0.34-Windows.zip',
         'size': 123,
-        'browser_download_url': 'https://github.com/RobinPopkema/Digitalguest-breakfast-orders/releases/download/v2.0.33/Breakfast-Orders-Flutter-2.0.33-Windows.zip',
+        'browser_download_url': 'https://github.com/RobinPopkema/Digitalguest-breakfast-orders/releases/download/v2.0.34/Breakfast-Orders-Flutter-2.0.34-Windows.zip',
         'digest': 'sha256:${'a' * 64}',
       },
     ],
@@ -29,7 +56,7 @@ void main() {
   test('Only complete releases with a verified Windows asset are offered', () {
     expect(
       eligibleUpdate(release(), updateRepository, appVersion)?['version'],
-      'v2.0.33',
+      'v2.0.34',
     );
     for (final key in ['draft', 'prerelease']) {
       expect(

@@ -9,6 +9,7 @@ import 'services/native.dart';
 import 'services/printing.dart';
 import 'model.dart';
 import 'ui/home.dart';
+import 'ui/common.dart';
 import 'ui/expressive_theme.dart';
 
 void main(List<String> args) async {
@@ -102,6 +103,7 @@ class BreakfastApp extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: app,
     builder: (context, _) => MaterialApp(
+      navigatorObservers: [appRouteObserver],
       title: 'Breakfast Orders',
       debugShowCheckedModeBanner: false,
       theme: breakfastTheme(),

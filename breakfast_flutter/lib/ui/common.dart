@@ -4,6 +4,8 @@ import '../model.dart';
 import '../services/email_parser.dart';
 import '../services/email_preview.dart';
 
+final appRouteObserver = RouteObserver<ModalRoute<dynamic>>();
+
 const settingsContentWidth = 1040.0;
 
 // Richer screen colors retain the stored palette IDs and original print colors.

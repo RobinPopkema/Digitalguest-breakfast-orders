@@ -67,7 +67,9 @@ class _OrderEditorState extends State<OrderEditor> {
 
   void quantity(String id, int step) {
     final item = findById(widget.app.data['items'], id);
-    if (step > 0 && item != null && !itemAvailable(item)) return;
+    if (step > 0 && item != null && !itemAvailable(item, widget.app.data)) {
+      return;
+    }
     setState(
       () => quantities[id] = ((quantities[id] ?? 0) + step).clamp(0, 10000),
     );
@@ -93,7 +95,7 @@ class _OrderEditorState extends State<OrderEditor> {
           final oldQty = rows(old?['lines'] ?? [])
               .where((l) => l['itemId'] == item['id'])
               .fold<num>(0, (sum, l) => sum + (l['qty'] as num));
-          if (!itemAvailable(item) && qty > oldQty) {
+          if (!itemAvailable(item, data) && qty > oldQty) {
             throw StateError('${item['name']} is unavailable.');
           }
           if (qty > 0) {
@@ -317,7 +319,15 @@ class _OrderEditorState extends State<OrderEditor> {
                         'Your menu is empty. Add categories and items in Manage menu.',
                       ),
                     ),
-                  for (final category in rows(data['categories'])) ...[
+                  for (final category in rows(data['categories']).where(
+                    (category) =>
+                        category['available'] != false ||
+                        rows(data['items']).any(
+                          (item) =>
+                              item['categoryId'] == category['id'] &&
+                              (quantities[item['id']] ?? 0) > 0,
+                        ),
+                  )) ...[
                     if (rows(data['items']).any(
                       (i) =>
                           i['categoryId'] == category['id'] &&
@@ -340,12 +350,12 @@ class _OrderEditorState extends State<OrderEditor> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(item['name']),
-                          subtitle: itemAvailable(item)
+                          subtitle: itemAvailable(item, data)
                               ? null
                               : const Text('Unavailable'),
                           trailing: QuantityStepper(
                             name: item['name'],
-                            canIncrease: itemAvailable(item),
+                            canIncrease: itemAvailable(item, data),
                             value: quantities[item['id']] ?? 0,
                             onChange: (step) => quantity(item['id'], step),
                           ),

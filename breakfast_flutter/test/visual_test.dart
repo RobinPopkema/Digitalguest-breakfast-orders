@@ -203,6 +203,18 @@ void main() {
         await tester.tap(find.byKey(ValueKey('settings-section-$section')));
         await tester.pumpAndSettle();
         await capture('compact-settings-$section');
+        if (section == 4) {
+          app.updates.available = {
+            'version': 'v9.0.0',
+            'notes': 'Improved menu controls and updates.',
+          };
+          app.updates.changed();
+          await tester.pumpAndSettle();
+          await capture('compact-update-notice');
+          app.updates.available = null;
+          app.updates.changed();
+          await tester.pumpAndSettle();
+        }
         if (section == 2) {
           await tester.ensureVisible(find.text('Check every 1 minute'));
           await tester.pumpAndSettle();
