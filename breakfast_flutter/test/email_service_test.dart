@@ -211,6 +211,107 @@ void main() {
     expect(service.imports, before);
   });
 
+  test(
+    'Bulk approval keeps warnings and invalid or unmatched orders pending',
+    () async {
+      await service.saveSettings(input);
+      await service.check();
+      final original = clone(service.queue.single);
+      Json entry(String id, Json changes) => {
+        ...clone(original),
+        'id': id,
+        'key': id,
+        ...changes,
+      };
+      service.imports['queue'] = <Json>[
+        entry('ready', {}),
+        entry('warning', {
+          'warnings': ['Check the source email'],
+        }),
+        entry('cabin', {'room': 'unknown'}),
+        entry('time', {'slot': 'invalid'}),
+        entry('item', {
+          'lines': [
+            {'name': 'Unknown product', 'qty': 1},
+          ],
+        }),
+        entry('quantity', {
+          'lines': [
+            {'name': 'Croissant', 'qty': 0},
+          ],
+        }),
+        entry('kind', {'kind': 'review'}),
+      ];
+      final ready = service.queue.first;
+      data = clone(data);
+      data['categories'][0]['available'] = false;
+      expect(service.bulkReady(ready), isFalse);
+      data['categories'][0]['available'] = true;
+      expect(
+        service.acceptReady(
+          service.queue.map((e) => e['id'] as String).toSet(),
+        ),
+        1,
+      );
+      expect(rows(data['orders']), hasLength(1));
+      expect(data['orders'][0]['comment'], original['comment']);
+      expect(data['orders'][0]['lines'][0]['qty'], 2);
+      expect(service.queue.map((e) => e['id']), [
+        'warning',
+        'cabin',
+        'time',
+        'item',
+        'quantity',
+        'kind',
+      ]);
+      expect(store.read('email-imports.json', {})['queue'], service.queue);
+    },
+  );
+
+  test(
+    'Bulk approval respects selection and an explicitly reviewed cabin',
+    () async {
+      await service.saveSettings(input);
+      await service.check();
+      final original = clone(service.queue.single);
+      service.imports['queue'] = <Json>[
+        {
+          ...clone(original),
+          'id': 'selected',
+          'key': 'selected',
+          'room': 'ambiguous',
+        },
+        {...clone(original), 'id': 'outside', 'key': 'outside'},
+      ];
+      expect(service.acceptReady({'selected'}), 0);
+      expect(service.acceptReady({'selected'}, cabinIds: {'selected': '9'}), 1);
+      expect(data['orders'][0]['room'], '9');
+      expect(service.queue.single['id'], 'outside');
+      expect(service.acceptReady({'selected'}), 0);
+    },
+  );
+
+  test('Bulk dismiss preserves seen history, aliases and unrelated pending entries', () async {
+    await service.saveSettings(input);
+    await service.check();
+    final original = clone(service.queue.single);
+    service.imports['queue'].add({
+      ...clone(original),
+      'id': 'keep',
+      'key': 'keep',
+    });
+    final seen = clone(service.imports['seen']);
+    final aliases = clone(service.imports['aliases']);
+    expect(service.dismissMany({original['id'], 'missing'}), 1);
+    expect(service.queue.single['id'], 'keep');
+    expect(service.dismissMany({original['id']}), 0);
+    expect(service.imports['seen'], seen);
+    expect(service.imports['aliases'], aliases);
+    await service.check();
+    expect(service.queue.single['id'], 'keep');
+    expect(data['orders'], isEmpty);
+  });
+
   test('Hidden categories block automatic and explicit imports without losing item flags', () async {
     await service.saveSettings(input);
     await service.check();

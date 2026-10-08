@@ -33,6 +33,93 @@ void main() {
   }
 
   testWidgets(
+    'Pending bulk selection approves ready orders and confirms dismissal of the rest',
+    (tester) async {
+      app.email.imports['queue'] = <Json>[
+        for (var i = 0; i < 3; i++)
+          {
+            'id': 'bulk$i',
+            'key': 'bulk$i',
+            'kind': 'breakfast',
+            'room': '8',
+            'slot': slots.first,
+            'comment': '',
+            'lines': [
+              {'name': 'Croissant', 'qty': 1},
+            ],
+            'warnings': i == 2 ? ['Check source'] : <String>[],
+          },
+      ];
+      await open(tester);
+      expect(find.text('Accept all ready (2)'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('select-all-pending')));
+      await tester.pumpAndSettle();
+      expect(find.text('Dismiss selected (3)'), findsOneWidget);
+      expect(find.text('Clear all orders'), findsOneWidget);
+      await tester.tap(find.text('Accept selected ready (2)'));
+      await tester.pumpAndSettle();
+      expect(rows(app.data['orders']), hasLength(2));
+      expect(app.email.queue.single['id'], 'bulk2');
+      expect(
+        tester
+            .widget<Checkbox>(
+              find.byKey(const ValueKey('select-pending-bulk2')),
+            )
+            .value,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('accept-ready-pending')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.text('Dismiss selected (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(app.email.queue, hasLength(1));
+      await tester.tap(find.text('Dismiss selected (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dismiss selected'));
+      await tester.pumpAndSettle();
+      expect(app.email.queue, isEmpty);
+      expect(rows(app.data['orders']), hasLength(2));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Approve all ready works without a selection and leaves cabin faults pending',
+    (tester) async {
+      app.email.imports['queue'] = <Json>[
+        for (var i = 0; i < 2; i++)
+          {
+            'id': 'all$i',
+            'key': 'all$i',
+            'kind': 'breakfast',
+            'room': i == 0 ? '8' : 'Unknown',
+            'slot': slots.first,
+            'comment': '',
+            'lines': [
+              {'name': 'Croissant', 'qty': 1},
+            ],
+            'warnings': <String>[],
+          },
+      ];
+      await open(tester);
+      await tester.tap(find.text('Accept all ready (1)'));
+      await tester.pumpAndSettle();
+      expect(rows(app.data['orders']), hasLength(1));
+      expect(app.email.queue.single['id'], 'all1');
+      expect(find.text('Dismiss selected (0)'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Get orders offers import actions while New order keeps manual entry',
     (tester) async {
       await open(tester);

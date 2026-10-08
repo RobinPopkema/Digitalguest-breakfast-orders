@@ -1,4 +1,4 @@
-# Breakfast Orders 2.0.37 Expressive preview
+# Breakfast Orders 2.0.38 Expressive preview
 
 A separate Windows rebuild of Breakfast Orders 1.22.2 using Flutter 3.47.6,
 Dart 3.13.5 and Material 3 Expressive styling. The original Electron source is retained unchanged
@@ -18,6 +18,13 @@ Updating from an earlier Flutter preview reuses the existing Flutter profile and
 The Expressive update uses stock Flutter controls with custom color, typography,
 shape and spring-motion treatments; it adds no dependencies. Reduced motion
 is respected. Saved-data compatibility and print layouts are preserved.
+
+## Changes in 2.0.38
+
+Pending orders now have individual selection, select-all, dismiss-selected and
+bulk approval. Approval accepts only warning-free orders with valid items,
+quantities, delivery times and a matched or explicitly reviewed cabin. With a
+selection it applies only to selected orders; otherwise it covers all ready orders.
 
 ## Changes in 2.0.37
 

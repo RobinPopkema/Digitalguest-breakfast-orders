@@ -20,7 +20,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with RouteAware {
-  final selected = <String>{}, cabins = <String, String>{};
+  final selected = <String>{},
+      pendingSelected = <String>{},
+      cabins = <String, String>{};
   String? expanded, expandedEmail;
   bool printing = false;
   AppController get app => widget.app;
@@ -73,6 +75,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
     if (mounted) {
       setState(() {
         selected.removeWhere((id) => findById(app.data['orders'], id) == null);
+        pendingSelected.removeWhere(
+          (id) => findById(app.email.queue, id) == null,
+        );
       });
     }
   }
@@ -480,10 +485,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                     children: [
                       if (mail.queue.isNotEmpty) ...[
                         const SizedBox(height: 20),
-                        Text(
-                          'Pending orders · ${mail.queue.length}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
+                        pendingControls(),
                         const SizedBox(height: 10),
                         for (final entry in mail.queue) emailRow(entry),
                         const SizedBox(height: 20),
@@ -881,6 +883,114 @@ class _HomePageState extends State<HomePage> with RouteAware {
     ),
   );
 
+  Future<void> dismissPending() async {
+    final ids = Set<String>.of(pendingSelected);
+    if (ids.isEmpty) return;
+    if (!await confirm(
+      context,
+      'Dismiss ${ids.length} pending orders?',
+      'The selected orders will be removed from Pending orders. Their emails stay untouched and can be reimported later.',
+      action: 'Dismiss selected',
+    )) {
+      return;
+    }
+    if (!mounted) return;
+    await run(() async {
+      final count = app.email.dismissMany(ids);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$count pending orders dismissed.')),
+        );
+      }
+    });
+  }
+
+  Future<void> acceptPending() async {
+    final ids = pendingSelected.isEmpty
+        ? app.email.queue.map((entry) => entry['id'] as String).toSet()
+        : Set<String>.of(pendingSelected);
+    await run(() async {
+      final count = app.email.acceptReady(ids, cabinIds: Map.of(cabins));
+      if (!mounted) return;
+      final remaining = app.email.queue
+          .where((entry) => ids.contains(entry['id']))
+          .length;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$count orders accepted.${remaining > 0 ? ' $remaining still need review.' : ''}',
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget pendingControls() {
+    final queue = app.email.queue;
+    final ready = queue
+        .where(
+          (entry) =>
+              (pendingSelected.isEmpty ||
+                  pendingSelected.contains(entry['id'])) &&
+              app.email.bulkReady(entry, cabinId: cabins[entry['id']]),
+        )
+        .length;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              key: const ValueKey('select-all-pending'),
+              semanticLabel: 'Select all pending orders',
+              tristate: true,
+              value: pendingSelected.isEmpty
+                  ? false
+                  : pendingSelected.length == queue.length
+                  ? true
+                  : null,
+              onChanged: (_) => setState(() {
+                if (pendingSelected.length == queue.length) {
+                  pendingSelected.clear();
+                } else {
+                  pendingSelected.addAll(
+                    queue.map((entry) => entry['id'] as String),
+                  );
+                }
+              }),
+            ),
+            Text(
+              'Pending orders · ${queue.length}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+        FilledButton.tonalIcon(
+          key: const ValueKey('accept-ready-pending'),
+          onPressed: ready == 0 ? null : acceptPending,
+          icon: const Icon(Icons.done_all),
+          label: Text(
+            pendingSelected.isEmpty
+                ? 'Accept all ready ($ready)'
+                : 'Accept selected ready ($ready)',
+          ),
+        ),
+        OutlinedButton.icon(
+          key: const ValueKey('dismiss-selected-pending'),
+          onPressed: pendingSelected.isEmpty ? null : dismissPending,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          icon: const Icon(Icons.delete_outline),
+          label: Text('Dismiss selected (${pendingSelected.length})'),
+        ),
+      ],
+    );
+  }
+
   Widget emailRow(Json entry) {
     final ids = app.email.matches(entry);
     final quick = app.email.quickReady(entry, matchedIds: ids);
@@ -909,9 +1019,15 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerLowest,
+        color: pendingSelected.contains(entry['id'])
+            ? colors.primaryContainer.withValues(alpha: .3)
+            : colors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.outlineVariant),
+        border: Border.all(
+          color: pendingSelected.contains(entry['id'])
+              ? colors.primary
+              : colors.outlineVariant,
+        ),
       ),
       child: Column(
         children: [
@@ -919,6 +1035,20 @@ class _HomePageState extends State<HomePage> with RouteAware {
             padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
             child: Row(
               children: [
+                Checkbox(
+                  key: ValueKey('select-pending-${entry['id']}'),
+                  semanticLabel:
+                      'Select pending order for ${guestCabin(entry)}',
+                  value: pendingSelected.contains(entry['id']),
+                  onChanged: (value) => setState(() {
+                    if (value == true) {
+                      pendingSelected.add(entry['id']);
+                    } else {
+                      pendingSelected.remove(entry['id']);
+                    }
+                  }),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

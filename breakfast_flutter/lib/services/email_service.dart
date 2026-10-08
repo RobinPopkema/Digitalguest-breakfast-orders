@@ -459,12 +459,56 @@ class EmailService extends ChangeNotifier {
     return matches.length == 1 ? matches.single['id'] as String : null;
   }
 
-  void dismiss(String id) {
+  bool bulkReady(Json entry, {String? cabinId}) {
+    final chosen = findById(readOrders()['safeCabins'], cabinId) != null
+        ? cabinId
+        : matchingCabin(entry);
+    final lines = rows(entry['lines']);
+    return (entry['warnings'] as List? ?? []).isEmpty &&
+        quickReady(entry) &&
+        findById(readOrders()['safeCabins'], chosen) != null &&
+        lines.length <= 500 &&
+        lines.every(
+          (line) =>
+              line['qty'] is int && line['qty'] > 0 && line['qty'] <= 10000,
+        );
+  }
+
+  int acceptReady(Set<String> ids, {Map<String, String> cabinIds = const {}}) {
+    var accepted = 0;
+    // Reuse individual acceptance and its save-before-dequeue recovery behavior.
+    for (final entry in List<Json>.of(queue)) {
+      if (!ids.contains(entry['id']) ||
+          !bulkReady(entry, cabinId: cabinIds[entry['id']])) {
+        continue;
+      }
+      final before = rows(readOrders()['orders']).length;
+      accept({
+        'id': entry['id'],
+        'safeCabinId':
+            findById(readOrders()['safeCabins'], cabinIds[entry['id']]) != null
+            ? cabinIds[entry['id']]
+            : matchingCabin(entry),
+        'confirmed': true,
+        'mode': 'quick',
+      });
+      accepted += rows(readOrders()['orders']).length - before;
+    }
+    return accepted;
+  }
+
+  void dismiss(String id) => dismissMany({id});
+
+  int dismissMany(Set<String> ids) {
     final next = clone(imports);
-    next['queue'].removeWhere((e) => e['id'] == id);
+    final before = rows(next['queue']).length;
+    next['queue'].removeWhere((entry) => ids.contains(entry['id']));
+    final removed = before - rows(next['queue']).length;
+    if (removed == 0) return 0;
     store.write('email-imports.json', next);
     imports = next;
     notifyListeners();
+    return removed;
   }
 
   void accept(Json input) {
