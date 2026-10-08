@@ -312,6 +312,62 @@ void main() {
     expect(data['orders'], isEmpty);
   });
 
+  test('Pending sorting supports all order modes and stable ready grouping without mutating the queue', () async {
+    await service.saveSettings(input);
+    await service.check();
+    final original = clone(service.queue.single);
+    data = clone(data);
+    data['safeCabins'] = <Json>[
+      for (final room in ['2', '3', '10']) {'id': room, 'name': room},
+    ];
+    service.imports['queue'] = <Json>[
+      {
+        ...clone(original),
+        'id': 'a',
+        'room': '10',
+        'slot': slots[1],
+        'receivedAt': '2026-10-03T08:00:00Z',
+      },
+      {
+        ...clone(original),
+        'id': 'b',
+        'room': '2',
+        'slot': slots[0],
+        'receivedAt': '2026-10-01T08:00:00Z',
+      },
+      {
+        ...clone(original),
+        'id': 'c',
+        'room': '3',
+        'slot': slots[2],
+        'receivedAt': '2026-10-02T08:00:00Z',
+        'warnings': ['Review source'],
+      },
+    ];
+    final before = clone(service.imports);
+    final expected = {
+      'room': ['b', 'c', 'a'],
+      'room-desc': ['a', 'c', 'b'],
+      'delivery': ['b', 'a', 'c'],
+      'delivery-desc': ['c', 'a', 'b'],
+      'newest': ['a', 'c', 'b'],
+      'oldest': ['b', 'c', 'a'],
+    };
+    for (final option in expected.entries) {
+      data['pendingViewSort'] = option.key;
+      expect(service.sortedPending().map((e) => e['id']), option.value);
+    }
+    data['pendingViewSort'] = 'room';
+    data['pendingReadyPosition'] = 'top';
+    expect(service.sortedPending().map((e) => e['id']), ['b', 'a', 'c']);
+    data['pendingReadyPosition'] = 'bottom';
+    expect(service.sortedPending().map((e) => e['id']), ['c', 'b', 'a']);
+    expect(service.imports, before);
+    service.queue.last['warnings'] = <String>[];
+    expect(service.sortedPending().map((e) => e['id']), ['b', 'c', 'a']);
+    expect(data['viewSort'], 'room');
+  });
+
   test('Hidden categories block automatic and explicit imports without losing item flags', () async {
     await service.saveSettings(input);
     await service.check();

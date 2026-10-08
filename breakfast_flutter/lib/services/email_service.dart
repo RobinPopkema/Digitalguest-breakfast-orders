@@ -459,6 +459,65 @@ class EmailService extends ChangeNotifier {
     return matches.length == 1 ? matches.single['id'] as String : null;
   }
 
+  List<Json> sortedPending({Map<String, String> cabinIds = const {}}) {
+    final data = readOrders();
+    final mode = data['pendingViewSort'] ?? 'oldest';
+    final placement = data['pendingReadyPosition'] ?? 'none';
+    final entries = queue;
+    final indexes = List.generate(entries.length, (i) => i);
+    final ready = [
+      for (final entry in entries)
+        bulkReady(entry, cabinId: cabinIds[entry['id']]),
+    ];
+    final rooms = [
+      for (final entry in entries)
+        findById(data['safeCabins'], cabinIds[entry['id']])?['name']
+                as String? ??
+            guestCabin(entry),
+    ];
+    final dates = [
+      for (final entry in entries)
+        DateTime.tryParse('${entry['receivedAt'] ?? ''}') ??
+            DateTime.tryParse('${entry['importedAt'] ?? ''}'),
+    ];
+    indexes.sort((left, right) {
+      if (placement != 'none' && ready[left] != ready[right]) {
+        return ready[left] == (placement == 'top') ? -1 : 1;
+      }
+      final insertion = left.compareTo(right);
+      if (mode == 'newest' || mode == 'oldest') {
+        final a = dates[left], b = dates[right];
+        final chronological = a == null && b == null
+            ? insertion
+            : a == null
+            ? -1
+            : b == null
+            ? 1
+            : a.compareTo(b);
+        final result = chronological == 0 ? insertion : chronological;
+        return mode == 'newest' ? -result : result;
+      }
+      final room = naturalCompare(rooms[left], rooms[right]);
+      final time = slots
+          .indexOf(entries[left]['slot'])
+          .compareTo(slots.indexOf(entries[right]['slot']));
+      final first = mode == 'room'
+          ? room
+          : mode == 'room-desc'
+          ? -room
+          : mode == 'delivery-desc'
+          ? -time
+          : time;
+      final second = '$mode'.startsWith('room') ? time : room;
+      return first != 0
+          ? first
+          : second != 0
+          ? second
+          : insertion;
+    });
+    return [for (final index in indexes) entries[index]];
+  }
+
   bool bulkReady(Json entry, {String? cabinId}) {
     final chosen = findById(readOrders()['safeCabins'], cabinId) != null
         ? cabinId

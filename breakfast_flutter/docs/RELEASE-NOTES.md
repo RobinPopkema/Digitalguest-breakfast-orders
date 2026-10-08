@@ -1,6 +1,6 @@
-# Breakfast Orders 2.0.38
+# Breakfast Orders 2.0.39
 
-- Added checkboxes and select-all to Pending orders, independent of confirmed-order selection.
-- Added Dismiss selected, with confirmation. Email messages and import history stay intact; dismissed orders can still be explicitly reimported.
-- Added Accept all ready and Accept selected ready. Only orders without source warnings, with matched available menu items, valid quantities and delivery times, and a matched or explicitly reviewed cabin are approved.
-- Orders needing review stay pending. Bulk approval retains existing duplicate protection and saves each accepted order before removing it from the pending queue.
+- Added a sort menu beside Pending orders with the same room, delivery and received-date choices as confirmed orders.
+- Added Ready orders at top, Ready orders at bottom and normal sorting. The selected sorting applies within each group.
+- Pending sorting preferences are saved independently from confirmed orders. Selection and source email order are preserved.
+- Ready grouping follows the same checks as bulk approval and updates as order details or menu availability change.

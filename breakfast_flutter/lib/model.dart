@@ -263,6 +263,15 @@ int naturalCompare(String a, String b) {
   return aa.length.compareTo(bb.length);
 }
 
+const orderSortOptions = {
+  'room': 'Room number',
+  'room-desc': 'Room descending',
+  'delivery': 'Delivery time',
+  'delivery-desc': 'Latest delivery',
+  'newest': 'Newest received',
+  'oldest': 'Oldest received',
+};
+
 List<Json> sortedOrders(Json data) {
   final original = rows(data['orders']);
   final mode = data['viewSort'] ?? 'room';

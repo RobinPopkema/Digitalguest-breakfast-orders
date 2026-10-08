@@ -33,6 +33,62 @@ void main() {
   }
 
   testWidgets(
+    'Pending sort and ready placement persist independently and retain selection',
+    (tester) async {
+      app.email.imports['queue'] = <Json>[
+        for (var i = 0; i < 2; i++)
+          {
+            'id': 'sort$i',
+            'key': 'sort$i',
+            'kind': 'breakfast',
+            'room': i == 0 ? '8' : '9',
+            'slot': slots.first,
+            'comment': '',
+            'lines': [
+              {'name': 'Croissant', 'qty': 1},
+            ],
+            'warnings': i == 0 ? <String>[] : ['Review source'],
+          },
+      ];
+      await open(tester);
+      final first = find.byKey(const ValueKey('select-pending-sort0'));
+      final second = find.byKey(const ValueKey('select-pending-sort1'));
+      await tester.tap(first);
+      await tester.tap(find.byTooltip('Sort pending orders'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Room descending'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(second).dy,
+        lessThan(tester.getTopLeft(first).dy),
+      );
+      await tester.tap(find.byTooltip('Sort pending orders'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ready orders at top'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(first).dy,
+        lessThan(tester.getTopLeft(second).dy),
+      );
+      expect(tester.widget<Checkbox>(first).value, isTrue);
+      await tester.tap(find.byTooltip('Sort pending orders'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ready orders at bottom'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(second).dy,
+        lessThan(tester.getTopLeft(first).dy),
+      );
+      final saved = app.store.loadOrders();
+      expect(saved['pendingViewSort'], 'room-desc');
+      expect(saved['pendingReadyPosition'], 'bottom');
+      expect(saved['viewSort'], 'room');
+      expect(app.email.queue.map((e) => e['id']), ['sort0', 'sort1']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Pending bulk selection approves ready orders and confirms dismissal of the rest',
     (tester) async {
       app.email.imports['queue'] = <Json>[

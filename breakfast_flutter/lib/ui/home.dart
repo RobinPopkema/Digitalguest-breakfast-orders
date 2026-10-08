@@ -487,7 +487,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
                         const SizedBox(height: 20),
                         pendingControls(),
                         const SizedBox(height: 10),
-                        for (final entry in mail.queue) emailRow(entry),
+                        for (final entry in mail.sortedPending(
+                          cabinIds: cabins,
+                        ))
+                          emailRow(entry),
                         const SizedBox(height: 20),
                       ],
                       const SizedBox(height: 12),
@@ -531,23 +534,15 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                   app.edit((d) => d['viewSort'] = mode);
                                 }),
                                 icon: const Icon(Icons.sort),
-                                itemBuilder: (_) =>
-                                    {
-                                          'room': 'Room number',
-                                          'room-desc': 'Room descending',
-                                          'delivery': 'Delivery time',
-                                          'delivery-desc': 'Latest delivery',
-                                          'newest': 'Newest received',
-                                          'oldest': 'Oldest received',
-                                        }.entries
-                                        .map(
-                                          (e) => CheckedPopupMenuItem(
-                                            value: e.key,
-                                            checked: data['viewSort'] == e.key,
-                                            child: Text(e.value),
-                                          ),
-                                        )
-                                        .toList(),
+                                itemBuilder: (_) => orderSortOptions.entries
+                                    .map(
+                                      (e) => CheckedPopupMenuItem(
+                                        value: e.key,
+                                        checked: data['viewSort'] == e.key,
+                                        child: Text(e.value),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ],
                           ),
@@ -965,6 +960,42 @@ class _HomePageState extends State<HomePage> with RouteAware {
             Text(
               'Pending orders · ${queue.length}',
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(width: 8),
+            PopupMenuButton<String>(
+              tooltip: 'Sort pending orders',
+              icon: const Icon(Icons.sort),
+              onSelected: (value) => run(() async {
+                app.edit((data) {
+                  if (value.startsWith('ready:')) {
+                    data['pendingReadyPosition'] = value.substring(6);
+                  } else {
+                    data['pendingViewSort'] = value;
+                  }
+                });
+              }),
+              itemBuilder: (_) => [
+                for (final option in orderSortOptions.entries)
+                  CheckedPopupMenuItem(
+                    value: option.key,
+                    checked:
+                        (app.data['pendingViewSort'] ?? 'oldest') == option.key,
+                    child: Text(option.value),
+                  ),
+                const PopupMenuDivider(),
+                for (final option in const {
+                  'none': 'Ready orders: normal sorting',
+                  'top': 'Ready orders at top',
+                  'bottom': 'Ready orders at bottom',
+                }.entries)
+                  CheckedPopupMenuItem(
+                    value: 'ready:${option.key}',
+                    checked:
+                        (app.data['pendingReadyPosition'] ?? 'none') ==
+                        option.key,
+                    child: Text(option.value),
+                  ),
+              ],
             ),
           ],
         ),
