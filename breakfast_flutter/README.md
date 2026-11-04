@@ -1,4 +1,4 @@
-# Breakfast Orders 2.0.41 Expressive preview
+# Breakfast Orders 2.0.42 Expressive preview
 
 A separate Windows rebuild of Breakfast Orders 1.22.2 using Flutter 3.47.6,
 Dart 3.13.5 and Material 3 Expressive styling. The original Electron source is retained unchanged
@@ -18,6 +18,13 @@ Updating from an earlier Flutter preview reuses the existing Flutter profile and
 The Expressive update uses stock Flutter controls with custom color, typography,
 shape and spring-motion treatments; it adds no dependencies. Reduced motion
 is respected. Saved-data compatibility and print layouts are preserved.
+
+## Changes in 2.0.42
+
+Unknown items can be added to the menu directly from full review. Choose an
+existing category or create a new category with an automatically selected color.
+The saved item is selected for the order; quantities stay locked and acceptance
+remains a separate step. Closing the creation dialog saves nothing.
 
 ## Changes in 2.0.41
 

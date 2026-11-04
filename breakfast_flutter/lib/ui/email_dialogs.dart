@@ -4,6 +4,7 @@ import '../controller.dart';
 import '../model.dart';
 import '../services/email_parser.dart';
 import 'common.dart';
+import 'imported_menu_item.dart';
 
 class EmailSettings extends StatefulWidget {
   const EmailSettings(this.app, {super.key, this.embedded = false});
@@ -278,6 +279,7 @@ class _EmailReviewState extends State<EmailReview> {
     lines = List.generate(
       ids.length,
       (i) => {
+        'originallyUnmatched': ids[i].isEmpty,
         'sourceIndex': i,
         'itemId': ids[i],
         'qty': widget.entry['lines'][i]['qty'],
@@ -492,6 +494,29 @@ class _EmailReviewState extends State<EmailReview> {
                       onChanged: (value) =>
                           setState(() => line['itemId'] = value),
                     ),
+                    if (line['originallyUnmatched'] == true) ...[
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        key: ValueKey('create-item-${line['sourceIndex']}'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add as new menu item'),
+                        onPressed: () async {
+                          final id = await showDialog<String>(
+                            context: context,
+                            builder: (_) => ImportedMenuItem(
+                              widget.app,
+                              '${line['sourceName']}',
+                            ),
+                          );
+                          if (id != null && mounted) {
+                            setState(() {
+                              line['itemId'] = id;
+                              line['originallyUnmatched'] = false;
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),

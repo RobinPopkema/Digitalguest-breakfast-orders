@@ -32,6 +32,84 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  for (final newCategory in [false, true]) {
+    testWidgets(
+      'Unknown item can be created in ${newCategory ? 'a new' : 'an existing'} category during review',
+      (tester) async {
+        app.email.imports['queue'] = <Json>[
+          {
+            'id': 'new-item',
+            'key': 'new-item',
+            'kind': 'breakfast',
+            'room': '8',
+            'slot': slots.first,
+            'comment': '',
+            'warnings': [],
+            'lines': [
+              {'name': 'Oat Milk', 'qty': 3},
+            ],
+          },
+        ];
+        await open(tester);
+        await tester.tap(find.byTooltip('Review & map'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('create-item-0')));
+        await tester.pumpAndSettle();
+        // Closing the creation dialog must not add anything to the saved menu.
+        await tester.enterText(
+          find.byKey(const ValueKey('import-category-name')),
+          'Discarded',
+        );
+        await tester.tap(find.byTooltip('Close').last);
+        await tester.pumpAndSettle();
+        expect(rows(app.data['categories']).length, 1);
+        expect(rows(app.data['items']).length, 2);
+        await tester.tap(find.byKey(const ValueKey('create-item-0')));
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(TextFormField, 'Oat Milk'), findsOneWidget);
+        if (newCategory) {
+          await tester.tap(find.text('Add & use item'));
+          await tester.pumpAndSettle();
+          expect(find.text('Enter a category name.'), findsOneWidget);
+          await tester.enterText(
+            find.byKey(const ValueKey('import-category-name')),
+            'Milk alternatives',
+          );
+        } else {
+          await tester.tap(find.byKey(const ValueKey('import-item-category')));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Bakery').last);
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.text('Add & use item'));
+        await tester.pumpAndSettle();
+        final item = rows(app.data['items'])
+            .singleWhere((i) => i['name'] == 'Oat Milk');
+        expect(rows(app.data['categories']).length, newCategory ? 2 : 1);
+        final category = findById(app.data['categories'], item['categoryId'])!;
+        expect(category['name'], newCategory ? 'Milk alternatives' : 'Bakery');
+        if (newCategory) expect(category['color'], isNot(0));
+        expect(
+          rows(app.store.loadOrders()['items'])
+              .any((i) => i['id'] == item['id']),
+          isTrue,
+        );
+        expect(app.email.queue, hasLength(1));
+        expect(rows(app.data['orders']), isEmpty);
+        expect(find.text('× 3'), findsOneWidget);
+        await tester.ensureVisible(find.byType(CheckboxListTile));
+        await tester.tap(find.byType(CheckboxListTile));
+        await tester.tap(find.text('Accept breakfast order'));
+        await tester.pumpAndSettle();
+        final line = rows(rows(app.data['orders']).single['lines']).single;
+        expect(line['itemId'], item['id']);
+        expect(line['qty'], 3);
+        expect(app.email.queue, isEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets(
     'Pending sort and ready placement persist independently and retain selection',
     (tester) async {
