@@ -649,7 +649,7 @@ void main() {
   );
 
   testWidgets(
-    'Review only maps unmatched products and preserves every source quantity',
+    'Review remaps matched and unmatched products and preserves every source quantity',
     (tester) async {
       app.email.imports['queue'] = [
         {
@@ -669,22 +669,28 @@ void main() {
       await open(tester);
       await tester.tap(find.byTooltip('Review & map'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('review-line-0')), findsNothing);
+      expect(find.byKey(const ValueKey('review-line-0')), findsOneWidget);
       expect(find.byKey(const ValueKey('review-line-1')), findsOneWidget);
       expect(find.text('× 3'), findsOneWidget);
       expect(find.widgetWithText(TextFormField, 'Qty'), findsNothing);
       expect(find.text('Add a menu item'), findsNothing);
+      await tester.ensureVisible(find.byKey(const ValueKey('map-0')));
+      await tester.tap(find.byKey(const ValueKey('map-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Butter').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const ValueKey('map-1')));
       await tester.tap(find.byKey(const ValueKey('map-1')));
       await tester.pumpAndSettle();
       expect(find.text('Bakery'), findsWidgets);
-      await tester.tap(find.text('Butter').last);
+      await tester.tap(find.text('Croissant').last);
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(CheckboxListTile));
       await tester.tap(find.byType(CheckboxListTile));
       await tester.tap(find.text('Accept breakfast order'));
       await tester.pumpAndSettle();
       final lines = rows(app.data['orders'][0]['lines']);
-      expect(lines.map((l) => l['name']), ['Croissant', 'Butter']);
+      expect(lines.map((l) => l['name']), ['Butter', 'Croissant']);
       expect(lines.map((l) => l['qty']), [2, 3]);
       expect(app.email.queue, isEmpty);
       expect(tester.takeException(), isNull);

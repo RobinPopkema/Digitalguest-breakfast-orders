@@ -1,6 +1,6 @@
-# Breakfast Orders 2.0.40
+# Breakfast Orders 2.0.41
 
-- Increased print margins from 4 mm to 6 mm.
-- Adjusted page sizing and removed redundant named-page transitions to prevent empty pages between print sections.
-- Slips and the sideways combined timetable/totals overview fit the new printable area, including continued-slip warnings.
-- Checked generated PDFs for every print mode and long overflowing orders.
+- Full review now lets you remap every item, including automatically matched products.
+- Original product names, category badges and locked quantities remain visible.
+- Added regression tests confirming that 1x Oat Milk stays Oat Milk and does not automatically match Milk. Without an available matching item it needs review.
+- Explicit saved manual mappings still apply; full review lets you correct them.

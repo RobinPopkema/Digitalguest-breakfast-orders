@@ -278,7 +278,6 @@ class _EmailReviewState extends State<EmailReview> {
     lines = List.generate(
       ids.length,
       (i) => {
-        'needsReview': ids[i].isEmpty,
         'sourceIndex': i,
         'itemId': ids[i],
         'qty': widget.entry['lines'][i]['qty'],
@@ -320,8 +319,8 @@ class _EmailReviewState extends State<EmailReview> {
   @override
   Widget build(BuildContext context) {
     final data = widget.app.data;
-    final unresolved = lines.where((l) => l['needsReview'] == true).toList();
-    final first = unresolved.firstOrNull;
+    final first =
+        lines.where((l) => l['itemId'] == '').firstOrNull ?? lines.firstOrNull;
     final colors = Theme.of(context).colorScheme;
     return EditorDialog(
       title: 'Review pending order · ${guestCabin(widget.entry)}',
@@ -400,11 +399,11 @@ class _EmailReviewState extends State<EmailReview> {
             ),
             const SizedBox(height: 20),
             Text(
-              unresolved.isEmpty ? 'All items matched automatically.' : 'Match the items below to available menu items. Unavailable items need a replacement. Other items were matched automatically.',
+              'Review or change the menu match for any item below. Quantities stay as ordered. Unavailable items need a replacement.',
               style: TextStyle(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
-            for (final line in unresolved)
+            for (final line in lines)
               Container(
                 key: ValueKey('review-line-${line['sourceIndex']}'),
                 margin: const EdgeInsets.only(bottom: 12),

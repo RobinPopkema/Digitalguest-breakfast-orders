@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:breakfast_orders/model.dart';
 import 'package:breakfast_orders/services/email_service.dart';
+import 'package:breakfast_orders/services/email_parser.dart';
 import 'package:breakfast_orders/services/mail_transport.dart';
 import 'package:breakfast_orders/services/store.dart';
 
@@ -102,6 +103,47 @@ void main() {
   tearDown(() {
     service.dispose();
     dir.deleteSync(recursive: true);
+  });
+  test(
+    'Oat Milk stays distinct from Milk during parsing and automatic matching',
+    () {
+      final entry = parseOrderEmail(
+        source()
+            .replaceAll('2 x Croissant', '1x Oat Milk')
+            .replaceAll('1 x Butter', '1x Milk'),
+      );
+      expect(rows(entry['lines']).map((line) => line['name']), [
+        'Oat Milk',
+        'Milk',
+      ]);
+      expect(rows(entry['lines']).map((line) => line['qty']), [1, 1]);
+      data['items'] = [
+        {'id': 'milk', 'name': 'Milk', 'categoryId': 'bakery'},
+      ];
+      expect(service.matches(entry), ['', 'milk']);
+      expect(service.quickReady(entry), isFalse);
+      data['items'].add({
+        'id': 'oat',
+        'name': 'Oat Milk',
+        'categoryId': 'bakery',
+      });
+      expect(service.matches(entry), ['oat', 'milk']);
+      entry['lines'][0]['name'] = 'oAt MiLk';
+      expect(service.matches(entry), ['oat', 'milk']);
+    },
+  );
+  test('Explicit saved product mappings remain distinct from automatic name matching', () {
+    data['items'] = [
+      {'id': 'milk', 'name': 'Milk', 'categoryId': 'bakery'},
+    ];
+    final entry = {
+      'lines': [
+        {'name': 'Oat Milk', 'qty': 1},
+      ],
+    };
+    expect(service.matches(entry), ['']);
+    service.imports['aliases'][normalize('Oat Milk')] = 'milk';
+    expect(service.matches(entry), ['milk']);
   });
   test('Get today’s orders restores deleted orders but skips confirmed and pending orders', () async {
     await service.saveSettings(input);
